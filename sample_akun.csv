@@ -1,0 +1,4 @@
+
+email,password,domain,type,name_identity,status,checklist
+test1@gmail.com,123,gmail.com,LEADER,LEADER 01,READY,0
+test2@atomicmail.io,123,atomicmail.io,MEMBER,MEMBER 01,READY,0
