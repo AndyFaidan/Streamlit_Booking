@@ -23,10 +23,12 @@ def show():
         WHERE user_id=? 
         AND UPPER(gender)=UPPER(?) 
         AND status='READY'
-        ORDER BY CASE WHEN type='LEADER' THEN 0 ELSE 1 END
+        ORDER BY 
+            CASE WHEN type='LEADER' THEN 0 ELSE 1 END,
+            name_identity ASC
     """, conn, params=(user["id"], gender))
 
-    if len(akun) == 0:
+    if akun.empty:
         st.warning(f"Tidak ada akun READY untuk {gender}")
         return
 
@@ -41,9 +43,9 @@ def show():
     selected = st.selectbox("Pilih Akun", list(akun_map.keys()))
     akun_id = akun_map[selected]
 
-    selected_akun = akun[akun["id"] == akun_id]
-    selected_type = selected_akun.iloc[0]["type"]
-    selected_identity = selected_akun.iloc[0]["name_identity"]
+    selected_akun = akun[akun["id"] == akun_id].iloc[0]
+    selected_type = selected_akun["type"]
+    selected_identity = selected_akun["name_identity"]
 
     # ======================
     # INPUT QTY
@@ -54,11 +56,11 @@ def show():
     # VALIDASI
     # ======================
     if qty > 1 and selected_type != "LEADER":
-        st.warning("QTY > 1 harus pilih LEADER")
+        st.warning("QTY > 1 wajib pilih LEADER")
         return
 
     # ======================
-    # INPUT TANGGAL + JAM
+    # INPUT TANGGAL
     # ======================
     col1, col2 = st.columns(2)
 
@@ -71,37 +73,51 @@ def show():
     tanggal_booking = datetime.combine(tgl, jam)
 
     # ======================
-    # BUTTON BOOKING
+    # BOOKING
     # ======================
     if st.button("Booking"):
 
+        # ambil nomor group (misal: LEADER 05 → 05)
+        try:
+            nomor = selected_identity.split()[-1]
+        except:
+            st.error("Format name_identity salah (contoh: LEADER 01)")
+            return
+
         # ======================
-        # AMBIL NOMOR GROUP (contoh: 05)
+        # AMBIL MEMBER LANGSUNG DARI DB
         # ======================
-        nomor = selected_identity.split()[-1]
+        member_df = pd.read_sql("""
+            SELECT id, name_identity
+            FROM akun_nusuk
+            WHERE user_id=?
+            AND UPPER(gender)=UPPER(?)
+            AND type='MEMBER'
+            AND status='READY'
+        """, conn, params=(user["id"], gender))
 
-        if qty == 1:
-            final_akun = selected_akun
+        # filter member sesuai nomor group
+        member_df = member_df[
+            member_df["name_identity"].str.endswith(nomor)
+        ]
 
-        else:
-            # ======================
-            # AMBIL MEMBER SESUAI NOMOR
-            # ======================
-            member = akun[
-                (akun["type"] == "MEMBER") &
-                (akun["name_identity"].str.endswith(nomor))
-            ].head(qty - 1)
+        # ======================
+        # GABUNG LEADER + MEMBER
+        # ======================
+        final_ids = [akun_id]
 
-            final_akun = pd.concat([selected_akun, member])
-
-            if len(final_akun) < qty:
-                st.error(f"Member {nomor} tidak cukup")
+        if qty > 1:
+            if len(member_df) < (qty - 1):
+                st.error(f"Member untuk group {nomor} tidak cukup ❌")
                 return
 
+            member_ids = member_df.head(qty - 1)["id"].tolist()
+            final_ids.extend(member_ids)
+
         # ======================
-        # SIMPAN BOOKING
+        # INSERT BOOKING
         # ======================
-        for _, row in final_akun.iterrows():
+        for acc_id in final_ids:
 
             conn.execute("""
                 INSERT INTO booking 
@@ -109,29 +125,29 @@ def show():
                 VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 user["id"],
-                row["id"],
+                acc_id,
                 gender,
                 tanggal_booking.strftime("%Y-%m-%d %H:%M"),
                 1,
                 "BOOKED"
             ))
 
-            # update status akun
+            # update akun jadi BOOKED
             conn.execute("""
                 UPDATE akun_nusuk 
                 SET status='BOOKED' 
                 WHERE id=?
-            """, (row["id"],))
+            """, (acc_id,))
 
         conn.commit()
 
-        st.success(f"Booking {qty} akun berhasil (Group {nomor})")
+        st.success(f"✅ Booking {len(final_ids)} akun berhasil (Group {nomor})")
         st.rerun()
 
     st.divider()
 
     # ======================
-    # TAMPILKAN DATA BOOKING
+    # DATA BOOKING
     # ======================
     st.subheader("Data Booking")
 
@@ -152,4 +168,3 @@ def show():
     """, conn, params=(user["id"],))
 
     st.dataframe(df, use_container_width=True)
-    
