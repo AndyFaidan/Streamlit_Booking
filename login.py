@@ -1,5 +1,29 @@
 import streamlit as st
 
+# ======================
+# USER DATA (SINGLE SOURCE)
+# ======================
+USERS = {
+    "andy": {
+        "id": 1,
+        "password": "123",
+        "role": "admin",
+        "full_name": "Andy Sofyan Guspriyanto"
+    },
+    "peri": {
+        "id": 2,
+        "password": "123",
+        "role": "user",
+        "full_name": "Peri Romadon"
+    },
+    "arief": {
+        "id": 3,
+        "password": "123",
+        "role": "user",
+        "full_name": "Arief Zaenal Hakim"
+    },
+}
+
 def show_login():
 
     # ======================
@@ -7,18 +31,10 @@ def show_login():
     # ======================
     st.markdown("""
     <style>
+    .stApp { background-color: #ffffff; }
 
-    /* ===== BACKGROUND PUTIH ===== */
-    .stApp {
-        background-color: #ffffff;
-    }
+    .block-container { padding-top: 6rem; }
 
-    /* ===== CENTER LAYOUT ===== */
-    .block-container {
-        padding-top: 6rem;
-    }
-
-    /* ===== BOX (CARD) ===== */
     div[data-testid="stContainer"] {
         background: #ffffff;
         border-radius: 20px;
@@ -27,17 +43,14 @@ def show_login():
         border: 1px solid #eee;
     }
 
-    /* ===== TITLE ===== */
     .title {
         text-align: center;
         font-size: 30px;
         font-weight: 600;
         color: #111;
         margin-bottom: 30px;
-        letter-spacing: 1px;
     }
 
-    /* ===== INPUT ===== */
     .stTextInput input {
         background: #f9f9f9 !important;
         border: 1px solid #ddd !important;
@@ -46,20 +59,9 @@ def show_login():
         padding: 12px;
     }
 
-    .stTextInput label {
-        color: #666 !important;
-    }
+    .stCheckbox label { color: #555 !important; }
+    .stCheckbox input { accent-color: black !important; }
 
-    /* ===== CHECKBOX ===== */
-    .stCheckbox label {
-        color: #555 !important;
-    }
-
-    .stCheckbox input {
-        accent-color: black !important;
-    }
-
-    /* ===== BUTTON ===== */
     .stButton>button {
         background: black;
         color: white;
@@ -69,10 +71,7 @@ def show_login():
         border: none;
     }
 
-    .stButton>button:hover {
-        background: #333;
-    }
-
+    .stButton>button:hover { background: #333; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -84,17 +83,15 @@ def show_login():
     with col2:
         with st.container(border=True):
 
-            # TITLE
             st.markdown('<div class="title">User Login</div>', unsafe_allow_html=True)
 
-            # INPUT
             username = st.text_input("Username")
             password = st.text_input("Password", type="password")
 
-            colA, colB = st.columns([1,1])
+            colA, colB = st.columns(2)
 
             with colA:
-                remember = st.checkbox("Remember me")
+                st.checkbox("Remember me")
 
             with colB:
                 st.markdown(
@@ -102,22 +99,22 @@ def show_login():
                     unsafe_allow_html=True
                 )
 
-            # BUTTON
+            # ======================
+            # LOGIN ACTION
+            # ======================
             if st.button("Login", use_container_width=True):
 
-                USERS = {
-                    "ZeusFaidan": {"id": 1, "password": "100201", "role": "admin"},
-                    "Peri Romadon": {"id": 2, "password": "Loyypeloyy1933", "role": "user"},
-                    "Ariefksf": {"id": 3, "password": "123", "role": "user"},
-                }
-
                 if username in USERS and USERS[username]["password"] == password:
+
                     st.session_state.user = {
                         "id": USERS[username]["id"],
                         "username": username,
-                        "role": USERS[username]["role"]
+                        "role": USERS[username]["role"],
+                        "full_name": USERS[username]["full_name"]
                     }
-                    st.success("Login berhasil")
+
+                    st.success(f"Welcome, {USERS[username]['full_name']} 👋")
                     st.rerun()
+
                 else:
                     st.error("Username / Password salah")
