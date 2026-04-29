@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from utils.db import get_connection
-from datetime import datetime
 
 # ======================
 # USER MAP
@@ -45,47 +44,57 @@ def show():
     # ======================
     # ROLE FILTER
     # ======================
-    if user["role"] != "admin":
-        df = df[df["user_id"] == user["id"]]
-        st.info("Mode User: hanya data sendiri")
+    if user["role"] == "admin":
+        st.success("Mode Admin: Melihat semua data")
     else:
-        st.success("Mode Admin: semua data")
+        df = df[df["user_id"] == user["id"]]
+        st.info("Mode User: Hanya melihat data sendiri")
 
     if df.empty:
         st.info("Tidak ada data")
         return
 
     # ======================
-    # MAP USER
+    # TAMBAH NAMA USER
     # ======================
     df["user_name"] = df["user_id"].map(USER_MAP)
 
     # ======================
     # SUMMARY
     # ======================
+    total_booking = len(df)
+    total_pax = df["qty"].sum()
+
     col1, col2 = st.columns(2)
-    col1.metric("Total Booking", len(df))
-    col2.metric("Total Pax", int(df["qty"].sum()))
+    col1.metric("Total Booking", total_booking)
+    col2.metric("Total Pax", total_pax)
 
     st.divider()
 
     # ======================
     # TABLE
     # ======================
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df[[
+        "user_name",
+        "name_identity",
+        "email",
+        "gender",
+        "type",
+        "qty",
+        "tanggal_booking",
+        "status"
+    ]], use_container_width=True)
 
     st.divider()
 
     # ======================
-    # SAFE SELECT
+    # SELECT DATA
     # ======================
-    options = {
-        f"{row['name_identity']} | {row['email']} | {row['tanggal_booking']}": row["id"]
-        for _, row in df.iterrows()
-    }
-
-    selected_label = st.selectbox("Pilih Booking", list(options.keys()))
-    selected_id = options[selected_label]
+    selected_id = st.selectbox(
+        "Pilih Booking",
+        df["id"],
+        format_func=lambda x: f"{df[df['id']==x]['name_identity'].values[0]} | {df[df['id']==x]['email'].values[0]}"
+    )
 
     selected_df = df[df["id"] == selected_id]
 
@@ -105,7 +114,7 @@ def show():
     col1, col2 = st.columns(2)
 
     with col1:
-        qty = st.number_input("Qty", 1, 100, int(selected["qty"]))
+        qty = st.number_input("Qty", min_value=1, max_value=100, value=int(selected["qty"]))
 
     with col2:
         status = st.selectbox(
@@ -114,11 +123,7 @@ def show():
             index=0 if selected["status"] == "BOOKED" else 1
         )
 
-    # gunakan datetime picker (lebih aman)
-    tanggal = st.datetime_input(
-        "Tanggal Booking",
-        value=pd.to_datetime(selected["tanggal_booking"])
-    )
+    tanggal = st.text_input("Tanggal Booking", value=str(selected["tanggal_booking"]))
 
     col1, col2 = st.columns(2)
 
@@ -127,38 +132,21 @@ def show():
     # ======================
     with col1:
         if st.button("💾 Update"):
-
             conn.execute("""
                 UPDATE booking
                 SET qty=?, tanggal_booking=?, status=?
                 WHERE id=?
-            """, (
-                qty,
-                tanggal.strftime("%Y-%m-%d %H:%M"),
-                status,
-                selected_id
-            ))
+            """, (qty, tanggal, status, selected_id))
 
-            # ======================
-            # SYNC AKUN
-            # ======================
             if status == "CANCEL":
                 conn.execute("""
-                    UPDATE akun_nusuk
+                    UPDATE akun_nusuk 
                     SET status='READY'
                     WHERE id=?
                 """, (selected["akun_id"],))
 
-            elif status == "BOOKED":
-                conn.execute("""
-                    UPDATE akun_nusuk
-                    SET status='BOOKED'
-                    WHERE id=?
-                """, (selected["akun_id"],))
-
             conn.commit()
-
-            st.success("Update berhasil ✅")
+            st.success("Data berhasil diupdate")
             st.rerun()
 
     # ======================
@@ -167,9 +155,8 @@ def show():
     with col2:
         if st.button("🗑️ Hapus Booking"):
 
-            # kembalikan akun ke READY
             conn.execute("""
-                UPDATE akun_nusuk
+                UPDATE akun_nusuk 
                 SET status='READY'
                 WHERE id=?
             """, (selected["akun_id"],))
@@ -177,5 +164,5 @@ def show():
             conn.execute("DELETE FROM booking WHERE id=?", (selected_id,))
             conn.commit()
 
-            st.warning("Booking dihapus & akun kembali READY")
+            st.warning("Booking dihapus")
             st.rerun()
