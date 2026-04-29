@@ -3,7 +3,10 @@ from utils.db import init_db
 from modules import akun, booking, rekap
 from login import show_login
 
-st.set_page_config(page_title="NUSUK SYSTEM", layout="wide")
+# ======================
+# CONFIG (WAJIB PALING ATAS)
+# ======================
+st.set_page_config(page_title="NUSUK SYSTEM", layout="centered")
 
 # ======================
 # INIT DB
@@ -11,31 +14,7 @@ st.set_page_config(page_title="NUSUK SYSTEM", layout="wide")
 init_db()
 
 # ======================
-# USER CONFIG
-# ======================
-USERS = {
-    "andy": {
-        "id": 1,
-        "password": "123",
-        "role": "admin",
-        "full_name": "Andy Sofyan Guspriyanto"
-    },
-    "peri": {
-        "id": 2,
-        "password": "123",
-        "role": "user",
-        "full_name": "Peri Romadon"
-    },
-    "arief": {
-        "id": 3,
-        "password": "123",
-        "role": "user",
-        "full_name": "Arief Zaenal Hakim"
-    },
-}
-
-# ======================
-# LOGIN STATE
+# INIT SESSION
 # ======================
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -44,48 +23,35 @@ if "user" not in st.session_state:
 # LOGIN PAGE
 # ======================
 if st.session_state.user is None:
-
-    st.title("User Login")
-
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-
-    if st.button("Login"):
-        if username in USERS and USERS[username]["password"] == password:
-            st.session_state.user = {
-                "id": USERS[username]["id"],
-                "username": username,
-                "role": USERS[username]["role"],
-                "full_name": USERS[username]["full_name"]
-            }
-            st.success("Login berhasil")
-            st.rerun()
-        else:
-            st.error("Username / Password salah")
-
+    show_login()
     st.stop()
 
 # ======================
-# USER INFO
+# USER DATA
 # ======================
 user = st.session_state.user
 
-st.sidebar.write(f"👤 {user['full_name']}")
-st.sidebar.caption(f"@{user['username']} | {user['role']}")
-
-if st.sidebar.button("Logout"):
-    st.session_state.user = None
-    st.rerun()
-
 # ======================
-# MENU
+# SIDEBAR
 # ======================
-menu = st.sidebar.selectbox("Menu", [
-    "Akun Pria",
-    "Akun Wanita",
-    "Booking",
-    "Rekapan"
-])
+with st.sidebar:
+    st.markdown(f"### 👤 {user['full_name']}")
+    st.caption(f"@{user['username']} | {user['role']}")
+
+    st.divider()
+
+    if st.button("Logout", use_container_width=True):
+        st.session_state.user = None
+        st.rerun()
+
+    st.divider()
+
+    menu = st.selectbox("Menu", [
+        "Akun Pria",
+        "Akun Wanita",
+        "Booking",
+        "Rekapan"
+    ])
 
 # ======================
 # ROUTING
