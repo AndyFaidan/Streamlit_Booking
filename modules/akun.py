@@ -13,7 +13,7 @@ DOMAIN_LIST = [
 ]
 
 # ======================
-# AUTO TYPE DARI DOMAIN
+# AUTO TYPE
 # ======================
 def get_type(domain):
     domain = str(domain).upper()
@@ -22,12 +22,11 @@ def get_type(domain):
         return "LEADER"
     elif "MEMBER" in domain:
         return "MEMBER"
-    else:
-        return "MEMBER"
+    return "MEMBER"
 
 
 # ======================
-# MAIN FUNCTION
+# MAIN
 # ======================
 def show(gender):
 
@@ -39,6 +38,12 @@ def show(gender):
     tab1, tab2 = st.tabs(["REGISTER DATA", "TABLE DATA"])
 
     # ======================
+    # INIT FLAG (ANTI LOOP)
+    # ======================
+    if f"uploaded_{gender}" not in st.session_state:
+        st.session_state[f"uploaded_{gender}"] = False
+
+    # ======================
     # TAB 1 - INPUT
     # ======================
     with tab1:
@@ -48,37 +53,74 @@ def show(gender):
 
         file = st.file_uploader("Upload CSV", key=f"upload_{gender}")
 
-        if file:
-            data = pd.read_csv(file)
+        col1, col2 = st.columns(2)
 
-            for _, r in data.iterrows():
+        with col1:
+            if st.button("🚀 Proses Upload", use_container_width=True):
 
-                domain = str(r["domain"])
-                tipe = get_type(domain)
+                if file is None:
+                    st.warning("Upload file dulu")
+                elif st.session_state[f"uploaded_{gender}"]:
+                    st.info("File sudah pernah diupload, klik reset jika ingin ulang")
+                else:
 
-                conn.execute("""
-                    INSERT INTO akun_nusuk
-                    (user_id, email, domain, gender, type, name_identity, status, checklist)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    user["id"],
-                    r["email"],
-                    domain,
-                    gender,
-                    tipe,
-                    r["name_identity"],
-                    r.get("status", "READY"),
-                    int(r.get("checklist", 0))
-                ))
+                    data = pd.read_csv(file)
 
-            conn.commit()
-            st.success("Upload berhasil ✅")
-            st.rerun()
+                    # ambil email existing
+                    existing = pd.read_sql("""
+                        SELECT email FROM akun_nusuk 
+                        WHERE user_id=? AND gender=?
+                    """, conn, params=(user["id"], gender))
+
+                    existing_emails = set(existing["email"])
+
+                    inserted = 0
+                    skipped = 0
+
+                    for _, r in data.iterrows():
+
+                        email = str(r["email"])
+
+                        if email in existing_emails:
+                            skipped += 1
+                            continue
+
+                        domain = str(r["domain"])
+                        tipe = get_type(domain)
+
+                        conn.execute("""
+                            INSERT INTO akun_nusuk
+                            (user_id, email, domain, gender, type, name_identity, status, checklist)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            user["id"],
+                            email,
+                            domain,
+                            gender,
+                            tipe,
+                            r["name_identity"],
+                            r.get("status", "READY"),
+                            int(r.get("checklist", 0))
+                        ))
+
+                        inserted += 1
+
+                    conn.commit()
+
+                    st.session_state[f"uploaded_{gender}"] = True
+
+                    st.success(f"✅ Upload selesai | Insert: {inserted} | Skip: {skipped}")
+                    st.rerun()
+
+        with col2:
+            if st.button("🔄 Reset Upload", use_container_width=True):
+                st.session_state[f"uploaded_{gender}"] = False
+                st.success("Upload direset")
 
         st.divider()
 
         # ======================
-        # INPUT MANUAL
+        # MANUAL INPUT
         # ======================
         st.subheader("Tambah Manual")
 
@@ -97,24 +139,33 @@ def show(gender):
 
         if st.button("Simpan", key=f"save_{gender}"):
 
-            conn.execute("""
-                INSERT INTO akun_nusuk
-                (user_id, email, domain, gender, type, name_identity, status, checklist)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                user["id"],
-                email,
-                domain,
-                gender,
-                tipe,
-                name,
-                "READY",
-                0
-            ))
+            # cek duplikat
+            check = pd.read_sql("""
+                SELECT * FROM akun_nusuk 
+                WHERE email=? AND user_id=? AND gender=?
+            """, conn, params=(email, user["id"], gender))
 
-            conn.commit()
-            st.success("Data tersimpan ✅")
-            st.rerun()
+            if len(check) > 0:
+                st.warning("Email sudah ada ❌")
+            else:
+                conn.execute("""
+                    INSERT INTO akun_nusuk
+                    (user_id, email, domain, gender, type, name_identity, status, checklist)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    user["id"],
+                    email,
+                    domain,
+                    gender,
+                    tipe,
+                    name,
+                    "READY",
+                    0
+                ))
+
+                conn.commit()
+                st.success("Data tersimpan ✅")
+                st.rerun()
 
     # ======================
     # TAB 2 - TABLE
@@ -160,7 +211,7 @@ def show(gender):
         st.divider()
 
         # ======================
-        # PILIH DATA
+        # SELECT
         # ======================
         selected_id = st.selectbox(
             "Pilih Data",
@@ -204,54 +255,40 @@ def show(gender):
 
         with col1:
             if st.button("💾 Update Data"):
-
                 conn.execute("""
                     UPDATE akun_nusuk SET
-                        email=?,
-                        domain=?,
-                        type=?,
-                        name_identity=?,
-                        status=?
+                        email=?, domain=?, type=?, name_identity=?, status=?
                     WHERE id=?
                 """, (
-                    email,
-                    domain,
-                    tipe,
-                    name,
-                    status,
-                    selected_id
+                    email, domain, tipe, name, status, selected_id
                 ))
-
                 conn.commit()
                 st.success("Data berhasil diupdate ✅")
                 st.rerun()
 
         with col2:
             if st.button("🗑️ Hapus Data"):
-
                 conn.execute("DELETE FROM akun_nusuk WHERE id=?", (selected_id,))
                 conn.commit()
-
                 st.warning("Data berhasil dihapus")
                 st.rerun()
 
         # ======================
-        # DELETE ALL (AMAN)
+        # DELETE ALL
         # ======================
         st.divider()
         st.subheader("⚠️ Hapus Semua Data")
 
-        confirm_text = st.text_input("Ketik 'HAPUS' untuk konfirmasi")
+        confirm = st.text_input("Ketik 'HAPUS' untuk konfirmasi")
 
-        if confirm_text == "HAPUS":
-            if st.button("🗑️ Hapus Semua Data", use_container_width=True):
+        if confirm == "HAPUS":
+            if st.button("🗑️ Hapus Semua", use_container_width=True):
 
                 conn.execute("""
-                    DELETE FROM akun_nusuk
+                    DELETE FROM akun_nusuk 
                     WHERE user_id=? AND gender=?
                 """, (user["id"], gender))
 
                 conn.commit()
-
-                st.success("Semua data berhasil dihapus ✅")
+                st.success("Semua data terhapus ✅")
                 st.rerun()
