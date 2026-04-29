@@ -255,15 +255,38 @@ def show(gender):
 
         with col1:
             if st.button("💾 Update Data"):
+
+                # update akun
                 conn.execute("""
                     UPDATE akun_nusuk SET
-                        email=?, domain=?, type=?, name_identity=?, status=?
+                        email=?, 
+                        domain=?, 
+                        type=?, 
+                        name_identity=?, 
+                        status=?
                     WHERE id=?
                 """, (
                     email, domain, tipe, name, status, selected_id
                 ))
+            
+                # ======================
+                # SYNC DENGAN BOOKING
+                # ======================
+                if status == "READY":
+                    # kalau dibalikin READY → booking jadi CANCEL
+                    conn.execute("""
+                        UPDATE booking
+                        SET status='CANCEL'
+                        WHERE akun_id=?
+                    """, (selected_id,))
+            
+                elif status == "BOOKED":
+                    # kalau dipaksa BOOKED → buat booking dummy (opsional)
+                    pass
+            
                 conn.commit()
-                st.success("Data berhasil diupdate ✅")
+            
+                st.success("Data berhasil diupdate ✅ (sync dengan booking)")
                 st.rerun()
 
         with col2:
