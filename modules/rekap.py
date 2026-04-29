@@ -2,6 +2,15 @@ import streamlit as st
 import pandas as pd
 from utils.db import get_connection
 
+# ======================
+# USER MAP
+# ======================
+USER_MAP = {
+    1: "Andy Sofyan Guspriyanto",
+    2: "Peri Romadon",
+    3: "Arief Zaenal Hakim"
+}
+
 def show():
     st.title("Rekapan Booking")
 
@@ -36,7 +45,7 @@ def show():
     # ROLE FILTER
     # ======================
     if user["role"] == "admin":
-        st.info("Mode Admin: Melihat semua data")
+        st.success("Mode Admin: Melihat semua data")
     else:
         df = df[df["user_id"] == user["id"]]
         st.info("Mode User: Hanya melihat data sendiri")
@@ -44,6 +53,11 @@ def show():
     if df.empty:
         st.info("Tidak ada data")
         return
+
+    # ======================
+    # TAMBAH NAMA USER
+    # ======================
+    df["user_name"] = df["user_id"].map(USER_MAP)
 
     # ======================
     # SUMMARY
@@ -60,7 +74,16 @@ def show():
     # ======================
     # TABLE
     # ======================
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df[[
+        "user_name",
+        "name_identity",
+        "email",
+        "gender",
+        "type",
+        "qty",
+        "tanggal_booking",
+        "status"
+    ]], use_container_width=True)
 
     st.divider()
 
@@ -76,7 +99,7 @@ def show():
     selected_df = df[df["id"] == selected_id]
 
     if selected_df.empty:
-        st.warning("Data tidak ditemukan / sudah berubah")
+        st.warning("Data tidak ditemukan")
         st.stop()
 
     selected = selected_df.iloc[0]
@@ -91,12 +114,7 @@ def show():
     col1, col2 = st.columns(2)
 
     with col1:
-        qty = st.number_input(
-            "Qty",
-            min_value=1,
-            max_value=100,
-            value=int(selected["qty"])
-        )
+        qty = st.number_input("Qty", min_value=1, max_value=100, value=int(selected["qty"]))
 
     with col2:
         status = st.selectbox(
@@ -105,10 +123,7 @@ def show():
             index=0 if selected["status"] == "BOOKED" else 1
         )
 
-    tanggal = st.text_input(
-        "Tanggal Booking",
-        value=str(selected["tanggal_booking"])
-    )
+    tanggal = st.text_input("Tanggal Booking", value=str(selected["tanggal_booking"]))
 
     col1, col2 = st.columns(2)
 
@@ -117,14 +132,12 @@ def show():
     # ======================
     with col1:
         if st.button("💾 Update"):
-
             conn.execute("""
                 UPDATE booking
                 SET qty=?, tanggal_booking=?, status=?
                 WHERE id=?
             """, (qty, tanggal, status, selected_id))
 
-            # Jika cancel → balikin akun ke READY
             if status == "CANCEL":
                 conn.execute("""
                     UPDATE akun_nusuk 
@@ -142,7 +155,6 @@ def show():
     with col2:
         if st.button("🗑️ Hapus Booking"):
 
-            # balikin akun ke READY
             conn.execute("""
                 UPDATE akun_nusuk 
                 SET status='READY'
@@ -152,5 +164,5 @@ def show():
             conn.execute("DELETE FROM booking WHERE id=?", (selected_id,))
             conn.commit()
 
-            st.warning("Booking dihapus & akun dikembalikan ke READY")
+            st.warning("Booking dihapus")
             st.rerun()
