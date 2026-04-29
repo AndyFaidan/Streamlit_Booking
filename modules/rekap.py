@@ -9,12 +9,13 @@ def show():
     conn = get_connection()
 
     # ======================
-    # LOAD DATA
+    # LOAD DATA (TAMBAH akun_id)
     # ======================
     df = pd.read_sql("""
         SELECT 
             b.id,
             b.user_id,
+            b.akun_id,
             a.email,
             a.gender,
             a.type,
@@ -32,17 +33,21 @@ def show():
         return
 
     # ======================
-    # FILTER USER (ROLE)
+    # FILTER USER
     # ======================
     if user["username"] != "andy":
         df = df[df["user_id"] == user["id"]]
+
+    if df.empty:
+        st.info("Tidak ada data untuk user ini")
+        return
 
     st.dataframe(df, use_container_width=True)
 
     st.divider()
 
     # ======================
-    # PILIH DATA
+    # SELECT (AMAN)
     # ======================
     selected_id = st.selectbox(
         "Pilih Booking",
@@ -50,19 +55,30 @@ def show():
         format_func=lambda x: f"{df[df['id']==x]['name_identity'].values[0]} | {df[df['id']==x]['email'].values[0]}"
     )
 
-    selected = df[df["id"] == selected_id].iloc[0]
+    selected_df = df[df["id"] == selected_id]
+
+    if selected_df.empty:
+        st.warning("Data tidak ditemukan / sudah berubah")
+        st.stop()
+
+    selected = selected_df.iloc[0]
 
     st.divider()
 
     # ======================
-    # EDIT SECTION
+    # EDIT
     # ======================
     st.subheader("✏️ Edit Booking")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        qty = st.number_input("Qty", min_value=1, max_value=100, value=int(selected["qty"]))
+        qty = st.number_input(
+            "Qty",
+            min_value=1,
+            max_value=100,
+            value=int(selected["qty"])
+        )
 
     with col2:
         status = st.selectbox(
@@ -71,7 +87,10 @@ def show():
             index=0 if selected["status"] == "BOOKED" else 1
         )
 
-    tanggal = st.text_input("Tanggal Booking", value=selected["tanggal_booking"])
+    tanggal = st.text_input(
+        "Tanggal Booking",
+        value=str(selected["tanggal_booking"])
+    )
 
     col1, col2 = st.columns(2)
 
@@ -87,13 +106,13 @@ def show():
                 WHERE id=?
             """, (qty, tanggal, status, selected_id))
 
-            # 🔥 LOGIC PENTING
+            # 🔥 FIX: pakai akun_id (bukan name_identity)
             if status == "CANCEL":
                 conn.execute("""
                     UPDATE akun_nusuk 
                     SET status='READY'
-                    WHERE name_identity=?
-                """, (selected["name_identity"],))
+                    WHERE id=?
+                """, (selected["akun_id"],))
 
             conn.commit()
             st.success("Data berhasil diupdate")
@@ -105,15 +124,18 @@ def show():
     with col2:
         if st.button("🗑️ Hapus Booking"):
 
-            # balikin akun ke READY
+            # balikin akun ke READY (pakai ID)
             conn.execute("""
                 UPDATE akun_nusuk 
                 SET status='READY'
-                WHERE name_identity=?
-            """, (selected["name_identity"],))
+                WHERE id=?
+            """, (selected["akun_id"],))
 
-            conn.execute("DELETE FROM booking WHERE id=?", (selected_id,))
+            conn.execute(
+                "DELETE FROM booking WHERE id=?",
+                (selected_id,)
+            )
+
             conn.commit()
-
             st.warning("Booking dihapus & akun dikembalikan ke READY")
             st.rerun()
