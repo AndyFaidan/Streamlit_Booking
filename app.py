@@ -1,6 +1,11 @@
 import streamlit as st
 from utils.db import init_db
 from modules import akun, booking, rekap
+from login import show_login
+
+if "user" not in st.session_state or st.session_state.user is None:
+    show_login()
+    st.stop()
 
 st.set_page_config(page_title="NUSUK SYSTEM", layout="wide")
 
@@ -9,29 +14,6 @@ st.set_page_config(page_title="NUSUK SYSTEM", layout="wide")
 # ======================
 init_db()
 
-# ======================
-# USER CONFIG
-# ======================
-USERS = {
-    "andy": {
-        "id": 1,
-        "password": "123",
-        "role": "admin",
-        "full_name": "Andy Sofyan Guspriyanto"
-    },
-    "peri": {
-        "id": 2,
-        "password": "123",
-        "role": "user",
-        "full_name": "Peri Romadon"
-    },
-    "arief": {
-        "id": 3,
-        "password": "123",
-        "role": "user",
-        "full_name": "Arief Zaenal Hakim"
-    },
-}
 
 # ======================
 # LOGIN STATE
