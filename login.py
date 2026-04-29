@@ -3,121 +3,150 @@ import streamlit as st
 def show_login():
 
     # ======================
-    # STYLE (WHITE MINIMAL)
+    # PREMIUM UI CSS
     # ======================
     st.markdown("""
     <style>
 
-    /* ===== BACKGROUND PUTIH ===== */
-    .stApp {
-        background-color: #ffffff;
-    }
-
-    /* ===== CENTER LAYOUT ===== */
+    /* RESET */
     .block-container {
-        padding-top: 6rem;
+        padding: 0 !important;
     }
 
-    /* ===== BOX (CARD) ===== */
-    div[data-testid="stContainer"] {
-        background: #ffffff;
-        border-radius: 20px;
+    /* BACKGROUND GRADIENT */
+    .stApp {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    /* CENTER LAYOUT */
+    .wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    /* CARD */
+    .card {
+        width: 380px;
         padding: 40px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        border: 1px solid #eee;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        animation: fadeIn 0.8s ease-in-out;
     }
 
-    /* ===== TITLE ===== */
+    /* ANIMATION */
+    @keyframes fadeIn {
+        from {opacity: 0; transform: translateY(20px);}
+        to {opacity: 1; transform: translateY(0);}
+    }
+
+    /* TITLE */
     .title {
         text-align: center;
         font-size: 30px;
         font-weight: 600;
-        color: #111;
-        margin-bottom: 30px;
-        letter-spacing: 1px;
-    }
-
-    /* ===== INPUT ===== */
-    .stTextInput input {
-        background: #f9f9f9 !important;
-        border: 1px solid #ddd !important;
-        color: #111 !important;
-        border-radius: 12px !important;
-        padding: 12px;
-    }
-
-    .stTextInput label {
-        color: #666 !important;
-    }
-
-    /* ===== CHECKBOX ===== */
-    .stCheckbox label {
-        color: #555 !important;
-    }
-
-    .stCheckbox input {
-        accent-color: black !important;
-    }
-
-    /* ===== BUTTON ===== */
-    .stButton>button {
-        background: black;
         color: white;
-        border-radius: 30px;
-        height: 45px;
-        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        text-align: center;
+        font-size: 14px;
+        color: #ddd;
+        margin-bottom: 30px;
+    }
+
+    /* INPUT */
+    .stTextInput>div>div>input {
+        border-radius: 12px;
+        padding: 12px;
         border: none;
+        background: rgba(255,255,255,0.9);
+    }
+
+    /* BUTTON */
+    .stButton>button {
+        width: 100%;
+        padding: 12px;
+        border-radius: 12px;
+        background: linear-gradient(90deg, #00c6ff, #0072ff);
+        color: white;
+        font-weight: bold;
+        border: none;
+        transition: 0.3s;
     }
 
     .stButton>button:hover {
-        background: #333;
+        transform: scale(1.03);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    /* FOOTER */
+    .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 12px;
+        color: #ccc;
     }
 
     </style>
     """, unsafe_allow_html=True)
 
     # ======================
-    # CENTER BOX
+    # WRAPPER
     # ======================
-    col1, col2, col3 = st.columns([1, 2, 1])
+    st.markdown('<div class="wrapper">', unsafe_allow_html=True)
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    # ======================
+    # HEADER
+    # ======================
+    st.markdown('<div class="title">NUSUK SYSTEM</div>', unsafe_allow_html=True)
+    st.markdown('<div class="subtitle">Login untuk melanjutkan</div>', unsafe_allow_html=True)
+
+    # ======================
+    # FORM
+    # ======================
+    username = st.text_input("Email / Username")
+    password = st.text_input("Password", type="password")
+
+    col1, col2 = st.columns([1,1])
+
+    with col1:
+        remember = st.checkbox("Remember me")
 
     with col2:
-        with st.container(border=True):
+        st.markdown("<div style='text-align:right;font-size:12px;color:#ccc;'>Forgot?</div>", unsafe_allow_html=True)
 
-            # TITLE
-            st.markdown('<div class="title">User Login</div>', unsafe_allow_html=True)
+    # ======================
+    # LOGIN LOGIC
+    # ======================
+    if st.button("LOGIN"):
 
-            # INPUT
-            username = st.text_input("Username")
-            password = st.text_input("Password", type="password")
+        users = {
+            "andy": {"id": 1, "password": "123", "role": "admin"},
+            "peri": {"id": 2, "password": "123", "role": "user"},
+            "arief": {"id": 3, "password": "123", "role": "user"},
+        }
 
-            colA, colB = st.columns([1,1])
+        if username in users and users[username]["password"] == password:
+            st.session_state.user = {
+                "id": users[username]["id"],
+                "username": username,
+                "role": users[username]["role"]
+            }
+            st.success("Login berhasil")
+            st.rerun()
+        else:
+            st.error("Username / Password salah")
 
-            with colA:
-                remember = st.checkbox("Remember me")
+    # ======================
+    # FOOTER
+    # ======================
+    st.markdown('<div class="footer">© 2026 Nusuk System</div>', unsafe_allow_html=True)
 
-            with colB:
-                st.markdown(
-                    "<p style='text-align:right;color:#888;'>Forgot?</p>",
-                    unsafe_allow_html=True
-                )
-
-            # BUTTON
-            if st.button("Login", use_container_width=True):
-
-                USERS = {
-                    "andy": {"id": 1, "password": "123", "role": "admin"},
-                    "peri": {"id": 2, "password": "123", "role": "user"},
-                    "arief": {"id": 3, "password": "123", "role": "user"},
-                }
-
-                if username in USERS and USERS[username]["password"] == password:
-                    st.session_state.user = {
-                        "id": USERS[username]["id"],
-                        "username": username,
-                        "role": USERS[username]["role"]
-                    }
-                    st.success("Login berhasil")
-                    st.rerun()
-                else:
-                    st.error("Username / Password salah")
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
