@@ -3,19 +3,34 @@ import pandas as pd
 from utils.db import get_connection
 
 # ======================
-# DOMAIN & TYPE MAPPING
+# DOMAIN LIST
 # ======================
-DOMAIN_MAP = {
-    "GMAIL (LEADER)": ("gmail.com", "LEADER"),
-    "YAHOO (LEADER)": ("yahoo.com", "LEADER"),
-    "ZOHOMAIL (LEADER)": ("zoho.com", "LEADER"),
-    "ATOMICMAIL (MEMBER)": ("atomicmail.io", "MEMBER"),
-}
+DOMAIN_LIST = [
+    "GMAIL (LEADER)",
+    "YAHOO (LEADER)",
+    "ZOHOMAIL (LEADER)",
+    "ATOMICMAIL (MEMBER)",
+]
 
-DOMAIN_LIST = list(DOMAIN_MAP.keys())
+# ======================
+# AUTO TYPE DARI DOMAIN
+# ======================
+def get_type(domain):
+    domain = str(domain).upper()
+
+    if "LEADER" in domain:
+        return "LEADER"
+    elif "MEMBER" in domain:
+        return "MEMBER"
+    else:
+        return "MEMBER"
 
 
+# ======================
+# MAIN FUNCTION
+# ======================
 def show(gender):
+
     st.title(f"Akun {gender}")
 
     user = st.session_state.user
@@ -29,7 +44,7 @@ def show(gender):
     with tab1:
 
         st.subheader("Upload CSV")
-        st.caption("Kolom: email,domain,name_identity,status,checklist")
+        st.caption("Kolom wajib: email,domain,name_identity")
 
         file = st.file_uploader("Upload CSV", key=f"upload_{gender}")
 
@@ -37,8 +52,9 @@ def show(gender):
             data = pd.read_csv(file)
 
             for _, r in data.iterrows():
-                domain = r["domain"]
-                tipe = "LEADER" if domain in ["gmail.com", "yahoo.com", "zoho.com"] else "MEMBER"
+
+                domain = str(r["domain"])
+                tipe = get_type(domain)
 
                 conn.execute("""
                     INSERT INTO akun_nusuk
@@ -56,11 +72,14 @@ def show(gender):
                 ))
 
             conn.commit()
-            st.success("Upload berhasil")
+            st.success("Upload berhasil ✅")
             st.rerun()
 
         st.divider()
 
+        # ======================
+        # INPUT MANUAL
+        # ======================
         st.subheader("Tambah Manual")
 
         col1, col2 = st.columns(2)
@@ -69,19 +88,14 @@ def show(gender):
             email = st.text_input("Email", key=f"email_{gender}")
 
         with col2:
-            domain_label = st.selectbox("Domain", DOMAIN_LIST, key=f"domain_{gender}")
-            domain, tipe = DOMAIN_MAP[domain_label]
+            domain = st.selectbox("Domain", DOMAIN_LIST, key=f"domain_{gender}")
+            tipe = get_type(domain)
 
-        # ✅ MANUAL NAME IDENTITY
-        name = st.text_input("Name Identity (Manual)", key=f"name_{gender}")
+        name = st.text_input("Name Identity", key=f"name_{gender}")
 
         st.info(f"Type otomatis: {tipe}")
 
         if st.button("Simpan", key=f"save_{gender}"):
-
-            if not email or not name:
-                st.warning("Email dan Name Identity wajib diisi")
-                return
 
             conn.execute("""
                 INSERT INTO akun_nusuk
@@ -99,7 +113,7 @@ def show(gender):
             ))
 
             conn.commit()
-            st.success("Data tersimpan")
+            st.success("Data tersimpan ✅")
             st.rerun()
 
     # ======================
@@ -115,7 +129,7 @@ def show(gender):
             WHERE user_id=? AND gender=?
         """, conn, params=(user["id"], gender))
 
-        if df.empty:
+        if len(df) == 0:
             st.info("Belum ada data")
             return
 
@@ -166,35 +180,31 @@ def show(gender):
         col1, col2 = st.columns(2)
 
         with col1:
-            email_edit = st.text_input("Email", value=selected_data["email"])
+            email = st.text_input("Email", value=selected_data["email"])
 
         with col2:
-            reverse_map = {v[0]: k for k, v in DOMAIN_MAP.items()}
-            selected_label = reverse_map.get(selected_data["domain"], DOMAIN_LIST[0])
-
-            domain_label_edit = st.selectbox(
+            domain = st.selectbox(
                 "Domain",
                 DOMAIN_LIST,
-                index=DOMAIN_LIST.index(selected_label)
+                index=DOMAIN_LIST.index(selected_data["domain"]) if selected_data["domain"] in DOMAIN_LIST else 0
             )
+            tipe = get_type(domain)
 
-            domain_edit, tipe_edit = DOMAIN_MAP[domain_label_edit]
+        name = st.text_input("Name Identity", value=selected_data["name_identity"])
 
-        # ✅ EDIT MANUAL NAME
-        name_edit = st.text_input("Name Identity", value=selected_data["name_identity"])
-
-        status_edit = st.selectbox(
+        status = st.selectbox(
             "Status",
             ["READY", "BOOKED"],
             index=0 if selected_data["status"] == "READY" else 1
         )
 
-        st.info(f"Type otomatis: {tipe_edit}")
+        st.info(f"Type otomatis: {tipe}")
 
         col1, col2 = st.columns(2)
 
         with col1:
             if st.button("💾 Update Data"):
+
                 conn.execute("""
                     UPDATE akun_nusuk SET
                         email=?,
@@ -204,20 +214,23 @@ def show(gender):
                         status=?
                     WHERE id=?
                 """, (
-                    email_edit,
-                    domain_edit,
-                    tipe_edit,
-                    name_edit,
-                    status_edit,
+                    email,
+                    domain,
+                    tipe,
+                    name,
+                    status,
                     selected_id
                 ))
+
                 conn.commit()
-                st.success("Data berhasil diupdate")
+                st.success("Data berhasil diupdate ✅")
                 st.rerun()
 
         with col2:
             if st.button("🗑️ Hapus Data"):
+
                 conn.execute("DELETE FROM akun_nusuk WHERE id=?", (selected_id,))
                 conn.commit()
+
                 st.warning("Data berhasil dihapus")
                 st.rerun()
