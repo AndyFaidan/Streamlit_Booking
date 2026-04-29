@@ -2,15 +2,25 @@ import streamlit as st
 import pandas as pd
 from utils.db import get_connection
 
+# ======================
+# DOMAIN & TYPE MAPPING
+# ======================
+DOMAIN_MAP = {
+    "GMAIL (LEADER)": ("gmail.com", "LEADER"),
+    "YAHOO (LEADER)": ("yahoo.com", "LEADER"),
+    "ZOHOMAIL (LEADER)": ("zoho.com", "LEADER"),
+    "ATOMICMAIL (MEMBER)": ("atomicmail.io", "MEMBER"),
+}
+
+DOMAIN_LIST = list(DOMAIN_MAP.keys())
+
+
 def show(gender):
     st.title(f"Akun {gender}")
 
     user = st.session_state.user
     conn = get_connection()
 
-    # ======================
-    # TABS
-    # ======================
     tab1, tab2 = st.tabs(["REGISTER DATA", "TABLE DATA"])
 
     # ======================
@@ -19,7 +29,7 @@ def show(gender):
     with tab1:
 
         st.subheader("Upload CSV")
-        st.caption("Kolom: email,password,domain,type,name_identity,status,checklist")
+        st.caption("Kolom: email,domain,name_identity,status,checklist")
 
         file = st.file_uploader("Upload CSV", key=f"upload_{gender}")
 
@@ -27,17 +37,19 @@ def show(gender):
             data = pd.read_csv(file)
 
             for _, r in data.iterrows():
+                domain = r["domain"]
+                tipe = "LEADER" if domain in ["gmail.com", "yahoo.com", "zoho.com"] else "MEMBER"
+
                 conn.execute("""
                     INSERT INTO akun_nusuk
-                    (user_id, email, password, domain, gender, type, name_identity, status, checklist)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (user_id, email, domain, gender, type, name_identity, status, checklist)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     user["id"],
                     r["email"],
-                    r["password"],
-                    r["domain"],
+                    domain,
                     gender,
-                    r["type"],
+                    tipe,
                     r["name_identity"],
                     r.get("status", "READY"),
                     int(r.get("checklist", 0))
@@ -45,6 +57,7 @@ def show(gender):
 
             conn.commit()
             st.success("Upload berhasil")
+            st.rerun()
 
         st.divider()
 
@@ -54,23 +67,29 @@ def show(gender):
 
         with col1:
             email = st.text_input("Email", key=f"email_{gender}")
-            password = st.text_input("Password", key=f"pass_{gender}")
 
         with col2:
-            domain = st.text_input("Domain", key=f"domain_{gender}")
-            tipe = st.selectbox("Type", ["LEADER", "MEMBER"], key=f"type_{gender}")
+            domain_label = st.selectbox("Domain", DOMAIN_LIST, key=f"domain_{gender}")
+            domain, tipe = DOMAIN_MAP[domain_label]
 
-        name = st.text_input("Name Identity ", key=f"name_{gender}")
+        # ✅ MANUAL NAME IDENTITY
+        name = st.text_input("Name Identity (Manual)", key=f"name_{gender}")
+
+        st.info(f"Type otomatis: {tipe}")
 
         if st.button("Simpan", key=f"save_{gender}"):
+
+            if not email or not name:
+                st.warning("Email dan Name Identity wajib diisi")
+                return
+
             conn.execute("""
                 INSERT INTO akun_nusuk
-                (user_id, email, password, domain, gender, type, name_identity, status, checklist)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, email, domain, gender, type, name_identity, status, checklist)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 user["id"],
                 email,
-                password,
                 domain,
                 gender,
                 tipe,
@@ -81,29 +100,27 @@ def show(gender):
 
             conn.commit()
             st.success("Data tersimpan")
+            st.rerun()
 
-   # ======================
-# TAB 2 - TABLE + EDIT + DELETE
-# ======================
-# ======================
-# TAB 2 - TABLE + FILTER + EDIT + DELETE
-# ======================
+    # ======================
+    # TAB 2 - TABLE
+    # ======================
     with tab2:
 
         st.subheader("Data Akun")
 
         df = pd.read_sql("""
-            SELECT id, email, password, domain, gender, type, name_identity, status
+            SELECT id, email, domain, gender, type, name_identity, status
             FROM akun_nusuk
             WHERE user_id=? AND gender=?
         """, conn, params=(user["id"], gender))
 
-        if len(df) == 0:
+        if df.empty:
             st.info("Belum ada data")
             return
 
         # ======================
-        # FILTER SECTION
+        # FILTER
         # ======================
         col1, col2 = st.columns(2)
 
@@ -113,7 +130,6 @@ def show(gender):
         with col2:
             filter_type = st.selectbox("Filter Type", ["ALL", "LEADER", "MEMBER"])
 
-        # apply filter
         df_filtered = df.copy()
 
         if search:
@@ -133,7 +149,7 @@ def show(gender):
         # PILIH DATA
         # ======================
         selected_id = st.selectbox(
-            "Pilih Data (untuk Edit / Delete)",
+            "Pilih Data",
             df_filtered["id"],
             format_func=lambda x: df_filtered[df_filtered["id"] == x]["name_identity"].values[0]
         )
@@ -143,24 +159,37 @@ def show(gender):
         st.divider()
 
         # ======================
-        # EDIT SECTION
+        # EDIT
         # ======================
         st.subheader("✏️ Edit Data")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            email = st.text_input("Email", value=selected_data["email"])
-            password = st.text_input("Password", value=selected_data["password"])
+            email_edit = st.text_input("Email", value=selected_data["email"])
 
         with col2:
-            domain = st.text_input("Domain", value=selected_data["domain"])
-            tipe = st.selectbox("Type", ["LEADER", "MEMBER"],
-                                index=0 if selected_data["type"] == "LEADER" else 1)
+            reverse_map = {v[0]: k for k, v in DOMAIN_MAP.items()}
+            selected_label = reverse_map.get(selected_data["domain"], DOMAIN_LIST[0])
 
-        name = st.text_input("Name Identity", value=selected_data["name_identity"])
-        status = st.selectbox("Status", ["READY", "BOOKED"],
-                            index=0 if selected_data["status"] == "READY" else 1)
+            domain_label_edit = st.selectbox(
+                "Domain",
+                DOMAIN_LIST,
+                index=DOMAIN_LIST.index(selected_label)
+            )
+
+            domain_edit, tipe_edit = DOMAIN_MAP[domain_label_edit]
+
+        # ✅ EDIT MANUAL NAME
+        name_edit = st.text_input("Name Identity", value=selected_data["name_identity"])
+
+        status_edit = st.selectbox(
+            "Status",
+            ["READY", "BOOKED"],
+            index=0 if selected_data["status"] == "READY" else 1
+        )
+
+        st.info(f"Type otomatis: {tipe_edit}")
 
         col1, col2 = st.columns(2)
 
@@ -169,28 +198,23 @@ def show(gender):
                 conn.execute("""
                     UPDATE akun_nusuk SET
                         email=?,
-                        password=?,
                         domain=?,
                         type=?,
                         name_identity=?,
                         status=?
                     WHERE id=?
                 """, (
-                    email,
-                    password,
-                    domain,
-                    tipe,
-                    name,
-                    status,
+                    email_edit,
+                    domain_edit,
+                    tipe_edit,
+                    name_edit,
+                    status_edit,
                     selected_id
                 ))
                 conn.commit()
                 st.success("Data berhasil diupdate")
                 st.rerun()
 
-        # ======================
-        # DELETE SECTION
-        # ======================
         with col2:
             if st.button("🗑️ Hapus Data"):
                 conn.execute("DELETE FROM akun_nusuk WHERE id=?", (selected_id,))
