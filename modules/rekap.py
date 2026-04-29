@@ -9,7 +9,7 @@ def show():
     conn = get_connection()
 
     # ======================
-    # LOAD DATA (TAMBAH akun_id)
+    # LOAD DATA
     # ======================
     df = pd.read_sql("""
         SELECT 
@@ -33,21 +33,39 @@ def show():
         return
 
     # ======================
-    # FILTER USER
+    # ROLE FILTER
     # ======================
-    if user["username"] != "andy":
+    if user["role"] == "admin":
+        st.info("Mode Admin: Melihat semua data")
+    else:
         df = df[df["user_id"] == user["id"]]
+        st.info("Mode User: Hanya melihat data sendiri")
 
     if df.empty:
-        st.info("Tidak ada data untuk user ini")
+        st.info("Tidak ada data")
         return
 
+    # ======================
+    # SUMMARY
+    # ======================
+    total_booking = len(df)
+    total_pax = df["qty"].sum()
+
+    col1, col2 = st.columns(2)
+    col1.metric("Total Booking", total_booking)
+    col2.metric("Total Pax", total_pax)
+
+    st.divider()
+
+    # ======================
+    # TABLE
+    # ======================
     st.dataframe(df, use_container_width=True)
 
     st.divider()
 
     # ======================
-    # SELECT (AMAN)
+    # SELECT DATA
     # ======================
     selected_id = st.selectbox(
         "Pilih Booking",
@@ -106,7 +124,7 @@ def show():
                 WHERE id=?
             """, (qty, tanggal, status, selected_id))
 
-            # 🔥 FIX: pakai akun_id (bukan name_identity)
+            # Jika cancel → balikin akun ke READY
             if status == "CANCEL":
                 conn.execute("""
                     UPDATE akun_nusuk 
@@ -124,18 +142,15 @@ def show():
     with col2:
         if st.button("🗑️ Hapus Booking"):
 
-            # balikin akun ke READY (pakai ID)
+            # balikin akun ke READY
             conn.execute("""
                 UPDATE akun_nusuk 
                 SET status='READY'
                 WHERE id=?
             """, (selected["akun_id"],))
 
-            conn.execute(
-                "DELETE FROM booking WHERE id=?",
-                (selected_id,)
-            )
-
+            conn.execute("DELETE FROM booking WHERE id=?", (selected_id,))
             conn.commit()
+
             st.warning("Booking dihapus & akun dikembalikan ke READY")
             st.rerun()
