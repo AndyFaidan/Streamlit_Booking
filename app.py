@@ -1,15 +1,15 @@
 import streamlit as st
+from login import show_login
 from utils.db import init_db
 from modules import akun, booking, rekap
-from login import show_login
 
-st.set_page_config(page_title="NUSUK SYSTEM", layout="centered")
+# HARUS PALING ATAS
+st.set_page_config(page_title="NUSUK SYSTEM")
 
-# init database
 init_db()
 
 # ======================
-# LOGIN
+# LOGIN CHECK
 # ======================
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -18,12 +18,12 @@ if st.session_state.user is None:
     show_login()
     st.stop()
 
-user = st.session_state.user
-
 # ======================
 # SIDEBAR
 # ======================
-st.sidebar.write(f"👤 {user['username']}")
+user = st.session_state.user
+
+st.sidebar.write(f"Login: **{user['username']}**")
 
 if st.sidebar.button("Logout"):
     st.session_state.user = None
