@@ -234,3 +234,24 @@ def show(gender):
 
                 st.warning("Data berhasil dihapus")
                 st.rerun()
+
+        # ======================
+        # DELETE ALL (AMAN)
+        # ======================
+        st.divider()
+        st.subheader("⚠️ Hapus Semua Data")
+
+        confirm_text = st.text_input("Ketik 'HAPUS' untuk konfirmasi")
+
+        if confirm_text == "HAPUS":
+            if st.button("🗑️ Hapus Semua Data", use_container_width=True):
+
+                conn.execute("""
+                    DELETE FROM akun_nusuk
+                    WHERE user_id=? AND gender=?
+                """, (user["id"], gender))
+
+                conn.commit()
+
+                st.success("Semua data berhasil dihapus ✅")
+                st.rerun()
