@@ -106,9 +106,9 @@ def show_login():
             if st.button("Login", use_container_width=True):
 
                 USERS = {
-                    "andy": {"id": 1, "password": "123", "role": "admin"},
-                    "peri": {"id": 2, "password": "123", "role": "user"},
-                    "arief": {"id": 3, "password": "123", "role": "user"},
+                    "ZeusFaidan": {"id": 1, "password": "100201", "role": "admin"},
+                    "Peri Romadon": {"id": 2, "password": "Loyypeloyy1933", "role": "user"},
+                    "Ariefksf": {"id": 3, "password": "123", "role": "user"},
                 }
 
                 if username in USERS and USERS[username]["password"] == password:
