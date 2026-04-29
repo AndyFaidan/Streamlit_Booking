@@ -1,152 +1,120 @@
 import streamlit as st
 
+# ======================
+# USER DATA (SINGLE SOURCE)
+# ======================
+USERS = {
+    "andy": {
+        "id": 1,
+        "password": "123",
+        "role": "admin",
+        "full_name": "Andy Sofyan Guspriyanto"
+    },
+    "peri": {
+        "id": 2,
+        "password": "123",
+        "role": "user",
+        "full_name": "Peri Romadon"
+    },
+    "arief": {
+        "id": 3,
+        "password": "123",
+        "role": "user",
+        "full_name": "Arief Zaenal Hakim"
+    },
+}
+
 def show_login():
 
     # ======================
-    # PREMIUM UI CSS
+    # STYLE (WHITE MINIMAL)
     # ======================
     st.markdown("""
     <style>
+    .stApp { background-color: #ffffff; }
 
-    /* RESET */
-    .block-container {
-        padding: 0 !important;
-    }
+    .block-container { padding-top: 6rem; }
 
-    /* BACKGROUND GRADIENT */
-    .stApp {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-
-    /* CENTER LAYOUT */
-    .wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-    }
-
-    /* CARD */
-    .card {
-        width: 380px;
-        padding: 40px;
+    div[data-testid="stContainer"] {
+        background: #ffffff;
         border-radius: 20px;
-        background: rgba(255,255,255,0.1);
-        backdrop-filter: blur(20px);
-        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        animation: fadeIn 0.8s ease-in-out;
+        padding: 40px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        border: 1px solid #eee;
     }
 
-    /* ANIMATION */
-    @keyframes fadeIn {
-        from {opacity: 0; transform: translateY(20px);}
-        to {opacity: 1; transform: translateY(0);}
-    }
-
-    /* TITLE */
     .title {
         text-align: center;
         font-size: 30px;
         font-weight: 600;
-        color: white;
-        margin-bottom: 10px;
-    }
-
-    .subtitle {
-        text-align: center;
-        font-size: 14px;
-        color: #ddd;
+        color: #111;
         margin-bottom: 30px;
     }
 
-    /* INPUT */
-    .stTextInput>div>div>input {
-        border-radius: 12px;
+    .stTextInput input {
+        background: #f9f9f9 !important;
+        border: 1px solid #ddd !important;
+        color: #111 !important;
+        border-radius: 12px !important;
         padding: 12px;
-        border: none;
-        background: rgba(255,255,255,0.9);
     }
 
-    /* BUTTON */
+    .stCheckbox label { color: #555 !important; }
+    .stCheckbox input { accent-color: black !important; }
+
     .stButton>button {
-        width: 100%;
-        padding: 12px;
-        border-radius: 12px;
-        background: linear-gradient(90deg, #00c6ff, #0072ff);
+        background: black;
         color: white;
-        font-weight: bold;
+        border-radius: 30px;
+        height: 45px;
+        font-weight: 600;
         border: none;
-        transition: 0.3s;
     }
 
-    .stButton>button:hover {
-        transform: scale(1.03);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-
-    /* FOOTER */
-    .footer {
-        text-align: center;
-        margin-top: 20px;
-        font-size: 12px;
-        color: #ccc;
-    }
-
+    .stButton>button:hover { background: #333; }
     </style>
     """, unsafe_allow_html=True)
 
     # ======================
-    # WRAPPER
+    # CENTER BOX
     # ======================
-    st.markdown('<div class="wrapper">', unsafe_allow_html=True)
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-
-    # ======================
-    # HEADER
-    # ======================
-    st.markdown('<div class="title">NUSUK SYSTEM</div>', unsafe_allow_html=True)
-    st.markdown('<div class="subtitle">Login untuk melanjutkan</div>', unsafe_allow_html=True)
-
-    # ======================
-    # FORM
-    # ======================
-    username = st.text_input("Email / Username")
-    password = st.text_input("Password", type="password")
-
-    col1, col2 = st.columns([1,1])
-
-    with col1:
-        remember = st.checkbox("Remember me")
+    col1, col2, col3 = st.columns([1, 2, 1])
 
     with col2:
-        st.markdown("<div style='text-align:right;font-size:12px;color:#ccc;'>Forgot?</div>", unsafe_allow_html=True)
+        with st.container(border=True):
 
-    # ======================
-    # LOGIN LOGIC
-    # ======================
-    if st.button("LOGIN"):
+            st.markdown('<div class="title">User Login</div>', unsafe_allow_html=True)
 
-        users = {
-            "andy": {"id": 1, "password": "123", "role": "admin"},
-            "peri": {"id": 2, "password": "123", "role": "user"},
-            "arief": {"id": 3, "password": "123", "role": "user"},
-        }
+            username = st.text_input("Username")
+            password = st.text_input("Password", type="password")
 
-        if username in users and users[username]["password"] == password:
-            st.session_state.user = {
-                "id": users[username]["id"],
-                "username": username,
-                "role": users[username]["role"]
-            }
-            st.success("Login berhasil")
-            st.rerun()
-        else:
-            st.error("Username / Password salah")
+            colA, colB = st.columns(2)
 
-    # ======================
-    # FOOTER
-    # ======================
-    st.markdown('<div class="footer">© 2026 Nusuk System</div>', unsafe_allow_html=True)
+            with colA:
+                st.checkbox("Remember me")
 
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+            with colB:
+                st.markdown(
+                    "<p style='text-align:right;color:#888;'>Forgot?</p>",
+                    unsafe_allow_html=True
+                )
+
+            # ======================
+            # LOGIN ACTION
+            # ======================
+            if st.button("Login", use_container_width=True):
+
+                if username in USERS and USERS[username]["password"] == password:
+
+                    st.session_state.user = {
+                        "id": USERS[username]["id"],
+                        "username": username,
+                        "role": USERS[username]["role"],
+                        "full_name": USERS[username]["full_name"]
+                    }
+
+                    st.success(f"Welcome, {USERS[username]['full_name']} 👋")
+                    st.rerun()
+
+                else:
+                    st.error("Username / Password salah")
