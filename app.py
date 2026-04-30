@@ -1,14 +1,10 @@
 import streamlit as st
 
-# WAJIB PALING ATAS (JANGAN ADA CODE SEBELUM INI)
-st.set_page_config(page_title="NUSUK SYSTEM", layout="wide")
-
 # ======================
 # IMPORT MODULE
 # ======================
+from modules import auth, akun, booking, rekap
 from utils.db import init_db
-from modules import akun, booking, rekap
-from login import show_login
 
 # ======================
 # INIT DATABASE
@@ -16,67 +12,79 @@ from login import show_login
 init_db()
 
 # ======================
-# INIT SESSION
+# CONFIG PAGE
 # ======================
-if "user" not in st.session_state:
-    st.session_state.user = None
+st.set_page_config(
+    page_title="Booking App",
+    page_icon="📊",
+    layout="wide"
+)
 
 # ======================
-# LOGIN PAGE
+# BELUM LOGIN
 # ======================
-if st.session_state.user is None:
-    show_login()
+if "user" not in st.session_state:
+
+    st.sidebar.title("🔐 Authentication")
+
+    menu = st.sidebar.radio("Menu", ["Login", "Register"])
+
+    if menu == "Login":
+        auth.login()
+    else:
+        auth.register()
+
     st.stop()
 
 # ======================
-# USER INFO
+# SUDAH LOGIN
 # ======================
 user = st.session_state.user
 
 # ======================
-# SIDEBAR
+# SIDEBAR USER INFO
 # ======================
-with st.sidebar:
-    st.markdown("### 👤 User Info")
-    st.write(f"**{user['full_name']}**")
-    st.caption(f"@{user['username']} | {user['role']}")
+st.sidebar.success(f"👤 {user['full_name']}")
+st.sidebar.write(f"Role: {user['role']}")
 
-    st.divider()
+st.sidebar.divider()
 
-    if st.button("🚪 Logout"):
-        st.session_state.user = None
-        st.rerun()
-
-    st.divider()
-
-    menu = st.selectbox("📌 Menu", [
-        "Akun Pria",
-        "Akun Wanita",
+# ======================
+# MENU (ROLE BASED)
+# ======================
+if user["role"] == "admin":
+    menu = st.sidebar.radio("Menu", [
+        "Akun PRIA",
+        "Akun WANITA",
         "Booking",
-        "Rekapan"
+        "Rekap"
     ])
-
-# ======================
-# MAIN HEADER
-# ======================
-st.title("📊 NUSUK MANAGEMENT SYSTEM")
+else:
+    menu = st.sidebar.radio("Menu", [
+        "Booking",
+        "Rekap"
+    ])
 
 # ======================
 # ROUTING
 # ======================
-try:
-    if menu == "Akun Pria":
-        akun.show("PRIA")
+if menu == "Akun PRIA":
+    akun.show("PRIA")
 
-    elif menu == "Akun Wanita":
-        akun.show("WANITA")
+elif menu == "Akun WANITA":
+    akun.show("WANITA")
 
-    elif menu == "Booking":
-        booking.show()
+elif menu == "Booking":
+    booking.show()
 
-    elif menu == "Rekapan":
-        rekap.show()
+elif menu == "Rekap":
+    rekap.show()
 
-except Exception as e:
-    st.error("Terjadi error di module")
-    st.exception(e)
+# ======================
+# LOGOUT
+# ======================
+st.sidebar.divider()
+
+if st.sidebar.button("🚪 Logout"):
+    st.session_state.clear()
+    st.rerun()
