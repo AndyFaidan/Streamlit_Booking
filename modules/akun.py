@@ -240,7 +240,7 @@ def show(gender):
 
         status = st.selectbox(
             "Status",
-            ["READY", "BOOKED"],
+            ["READY", "BOOKED", "USED"],
             index=0 if selected["status"] == "READY" else 1,
             key=f"edit_status_{gender}"
         )
