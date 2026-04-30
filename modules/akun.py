@@ -9,29 +9,34 @@ import re
 DOMAIN_LIST = [
     "GMAIL (LEADER)",
     "YAHOO (LEADER)",
+    "ZOHOMAIL (LEADER)",
     "ATOMICMAIL (MEMBER)",
 ]
 
 # ======================
-# AUTO TYPE
+# TYPE OTOMATIS
 # ======================
 def get_type(domain):
+    domain = str(domain).upper()
     return "LEADER" if "LEADER" in domain else "MEMBER"
 
 # ======================
-# NORMALIZE NAME
+# EXTRACT GROUP ID
 # ======================
-def normalize(name):
-    name = name.strip().upper()
-    match = re.search(r'(\d+)$', name)
+def extract_group(name):
+    match = re.search(r'(\d+)$', str(name))
+    return match.group(1) if match else None
 
-    if not match:
-        return name, None
-
-    num = match.group(1).zfill(2)
-    tipe = "LEADER" if "LEADER" in name else "MEMBER"
-
-    return f"{tipe} {num}", num
+# ======================
+# NORMALIZE DATA
+# ======================
+def normalize_row(r):
+    email = str(r["email"]).strip().lower()
+    domain = str(r["domain"]).strip().upper().replace(" ", "")
+    name = str(r["name_identity"]).strip().upper()
+    tipe = get_type(domain)
+    group_id = extract_group(name)
+    return email, domain, name, tipe, group_id
 
 
 # ======================
@@ -39,55 +44,86 @@ def normalize(name):
 # ======================
 def show(gender):
 
-    st.title(f"📧 Akun {gender}")
+    st.title(f"📂 Akun {gender}")
 
     conn = get_connection()
     user = st.session_state.user
 
-    tab1, tab2 = st.tabs(["➕ Registrasi", "📊 Data Akun"])
+    tab1, tab2 = st.tabs(["📥 Upload & Input", "📊 Data Akun"])
 
     # ======================
-    # TAB 1: REGISTRASI
+    # TAB 1 - UPLOAD & INPUT
     # ======================
     with tab1:
 
-        st.subheader("📤 Upload CSV")
-        st.caption("Format: email,domain,name_identity")
+        st.subheader("Upload CSV")
+        st.caption("Kolom wajib: email, domain, name_identity")
 
         file = st.file_uploader("Upload CSV", type=["csv"], key=f"upload_{gender}")
 
         if file:
-            data = pd.read_csv(file)
 
-            for _, r in data.iterrows():
-                name, gid = normalize(r["name_identity"])
+            df = pd.read_csv(file)
 
-                conn.execute("""
-                    INSERT INTO akun_nusuk
-                    (user_id,email,domain,gender,type,name_identity,group_id,status,checklist)
-                    VALUES (?,?,?,?,?,?,?,?,?)
-                """, (
-                    user["id"],
-                    r["email"],
-                    r["domain"],
-                    gender,
-                    get_type(r["domain"]),
-                    name,
-                    gid,
-                    "READY",
-                    0
-                ))
+            st.write("Preview Data:")
+            st.dataframe(df, use_container_width=True)
 
-            conn.commit()
-            st.success("✅ Upload berhasil")
-            st.rerun()
+            if st.button("🚀 Proses Upload", key=f"upload_btn_{gender}"):
+
+                inserted = 0
+                skipped = 0
+
+                for _, r in df.iterrows():
+
+                    email, domain, name, tipe, group_id = normalize_row(r)
+
+                    if not group_id:
+                        skipped += 1
+                        continue
+
+                    # ======================
+                    # CEK DUPLIKAT
+                    # ======================
+                    cek = conn.execute("""
+                        SELECT id FROM akun_nusuk
+                        WHERE user_id=? AND email=? AND gender=?
+                    """, (user["id"], email, gender)).fetchone()
+
+                    if cek:
+                        skipped += 1
+                        continue
+
+                    try:
+                        conn.execute("""
+                            INSERT INTO akun_nusuk
+                            (user_id, email, domain, gender, type, name_identity, group_id, status, checklist)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, (
+                            user["id"],
+                            email,
+                            domain,
+                            gender,
+                            tipe,
+                            name,
+                            group_id,
+                            "READY",
+                            0
+                        ))
+                        inserted += 1
+                    except:
+                        skipped += 1
+
+                conn.commit()
+
+                st.success(f"✅ Insert: {inserted} | Skip: {skipped}")
+                st.rerun()
 
         st.divider()
 
         # ======================
         # INPUT MANUAL
         # ======================
-        st.subheader("➕ Tambah Manual")
+        st.subheader("Tambah Manual")
 
         col1, col2 = st.columns(2)
 
@@ -95,50 +131,52 @@ def show(gender):
             email = st.text_input("Email", key=f"email_{gender}")
 
         with col2:
-            domain = st.selectbox(
-                "Domain",
-                DOMAIN_LIST,
-                key=f"domain_{gender}"
-            )
+            domain = st.selectbox("Domain", DOMAIN_LIST, key=f"domain_{gender}")
+            tipe = get_type(domain)
 
-        name = st.text_input(
-            "Name Identity (contoh: LEADER 01)",
-            key=f"name_{gender}"
-        )
+        name = st.text_input("Name Identity (contoh: LEADER 01)", key=f"name_{gender}")
+        group_id = extract_group(name)
 
-        tipe = get_type(domain)
-        st.info(f"Type otomatis: {tipe}")
+        st.info(f"Type: {tipe} | Group: {group_id}")
 
-        if st.button("💾 Simpan", key=f"save_{gender}", use_container_width=True):
+        if st.button("💾 Simpan", key=f"save_{gender}"):
 
-            if not email or not name:
-                st.warning("⚠️ Isi semua field")
+            if not email or not name or not group_id:
+                st.warning("Data belum lengkap")
                 return
 
-            name, gid = normalize(name)
+            # CEK DUPLIKAT
+            cek = conn.execute("""
+                SELECT id FROM akun_nusuk
+                WHERE user_id=? AND email=? AND gender=?
+            """, (user["id"], email, gender)).fetchone()
+
+            if cek:
+                st.error("Email sudah ada")
+                return
 
             conn.execute("""
                 INSERT INTO akun_nusuk
-                (user_id,email,domain,gender,type,name_identity,group_id,status,checklist)
-                VALUES (?,?,?,?,?,?,?,?,?)
+                (user_id, email, domain, gender, type, name_identity, group_id, status, checklist)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 user["id"],
-                email,
+                email.lower(),
                 domain,
                 gender,
                 tipe,
-                name,
-                gid,
+                name.upper(),
+                group_id,
                 "READY",
                 0
             ))
 
             conn.commit()
-            st.success("Data tersimpan ✅")
+            st.success("Data berhasil disimpan ✅")
             st.rerun()
 
     # ======================
-    # TAB 2: TABLE + EDIT
+    # TAB 2 - DATA
     # ======================
     with tab2:
 
@@ -157,30 +195,15 @@ def show(gender):
         # ======================
         # FILTER
         # ======================
-        col1, col2 = st.columns(2)
-
-        with col1:
-            search = st.text_input("🔍 Cari", key=f"search_{gender}")
-
-        with col2:
-            filter_type = st.selectbox(
-                "Filter",
-                ["ALL", "LEADER", "MEMBER"],
-                key=f"filter_{gender}"
-            )
-
-        df_filtered = df.copy()
+        search = st.text_input("🔍 Cari Email / Name")
 
         if search:
-            df_filtered = df_filtered[
-                df_filtered["email"].str.contains(search, case=False) |
-                df_filtered["name_identity"].str.contains(search, case=False)
+            df = df[
+                df["email"].str.contains(search, case=False) |
+                df["name_identity"].str.contains(search, case=False)
             ]
 
-        if filter_type != "ALL":
-            df_filtered = df_filtered[df_filtered["type"] == filter_type]
-
-        st.dataframe(df_filtered, use_container_width=True)
+        st.dataframe(df, use_container_width=True)
 
         st.divider()
 
@@ -189,70 +212,62 @@ def show(gender):
         # ======================
         selected_id = st.selectbox(
             "Pilih Data",
-            df_filtered["id"],
-            format_func=lambda x: df_filtered[df_filtered["id"] == x]["name_identity"].values[0],
+            df["id"],
+            format_func=lambda x: df[df["id"] == x]["name_identity"].values[0],
             key=f"select_{gender}"
         )
 
-        row = df_filtered[df_filtered["id"] == selected_id].iloc[0]
+        selected = df[df["id"] == selected_id].iloc[0]
 
-        st.divider()
         st.subheader("✏️ Edit Data")
 
-        col1, col2 = st.columns(2)
+        email = st.text_input("Email", value=selected["email"], key=f"edit_email_{gender}")
 
-        with col1:
-            email_edit = st.text_input(
-                "Email",
-                value=row["email"],
-                key=f"email_edit_{gender}"
-            )
+        domain = st.selectbox(
+            "Domain",
+            DOMAIN_LIST,
+            index=DOMAIN_LIST.index(selected["domain"]) if selected["domain"] in DOMAIN_LIST else 0,
+            key=f"edit_domain_{gender}"
+        )
 
-        with col2:
-            domain_edit = st.selectbox(
-                "Domain",
-                DOMAIN_LIST,
-                index=DOMAIN_LIST.index(row["domain"]) if row["domain"] in DOMAIN_LIST else 0,
-                key=f"domain_edit_{gender}"
-            )
+        tipe = get_type(domain)
 
-        name_edit = st.text_input(
+        name = st.text_input(
             "Name Identity",
-            value=row["name_identity"],
-            key=f"name_edit_{gender}"
+            value=selected["name_identity"],
+            key=f"edit_name_{gender}"
         )
 
-        status_edit = st.selectbox(
+        status = st.selectbox(
             "Status",
-            ["READY", "BOOKED", "USED"],
-            index=["READY", "BOOKED", "USED"].index(row["status"]),
-            key=f"status_edit_{gender}"
+            ["READY", "BOOKED"],
+            index=0 if selected["status"] == "READY" else 1,
+            key=f"edit_status_{gender}"
         )
 
-        tipe_edit = get_type(domain_edit)
-        st.info(f"Type otomatis: {tipe_edit}")
+        group_id = extract_group(name)
 
         col1, col2 = st.columns(2)
 
-        # ======================
-        # UPDATE
-        # ======================
         with col1:
-            if st.button("💾 Update", key=f"update_{gender}", use_container_width=True):
-
-                name_edit, gid = normalize(name_edit)
+            if st.button("💾 Update", key=f"update_{gender}"):
 
                 conn.execute("""
-                    UPDATE akun_nusuk
-                    SET email=?, domain=?, type=?, name_identity=?, group_id=?, status=?
+                    UPDATE akun_nusuk SET
+                        email=?,
+                        domain=?,
+                        type=?,
+                        name_identity=?,
+                        group_id=?,
+                        status=?
                     WHERE id=?
                 """, (
-                    email_edit,
-                    domain_edit,
-                    tipe_edit,
-                    name_edit,
-                    gid,
-                    status_edit,
+                    email.lower(),
+                    domain,
+                    tipe,
+                    name.upper(),
+                    group_id,
+                    status,
                     selected_id
                 ))
 
@@ -260,11 +275,8 @@ def show(gender):
                 st.success("Update berhasil ✅")
                 st.rerun()
 
-        # ======================
-        # DELETE
-        # ======================
         with col2:
-            if st.button("🗑️ Hapus", key=f"delete_{gender}", use_container_width=True):
+            if st.button("🗑️ Hapus", key=f"delete_{gender}"):
 
                 conn.execute("DELETE FROM akun_nusuk WHERE id=?", (selected_id,))
                 conn.commit()
