@@ -7,19 +7,15 @@ USERS = {
         "password": "123",
         "full_name": "Andy Sofyan Guspriyanto",
         "role": "admin"
-    }
-}
-{
-    "Zedd": {
+    },
+    "zedd": {
         "id": 2,
         "password": "1933",
         "full_name": "Peri Romadon",
         "role": "admin"
-    }
-}
-{
-    "Ariefksf": {
-        "id": 1,
+    },
+    "ariefksf": {
+        "id": 3,
         "password": "123",
         "full_name": "Arief Zaenal Hakim",
         "role": "admin"
