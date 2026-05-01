@@ -9,6 +9,22 @@ USERS = {
         "role": "admin"
     }
 }
+{
+    "Zedd": {
+        "id": 2,
+        "password": "1933",
+        "full_name": "Peri Romadon",
+        "role": "admin"
+    }
+}
+{
+    "Ariefksf": {
+        "id": 1,
+        "password": "123",
+        "full_name": "Arief Zaenal Hakim",
+        "role": "admin"
+    }
+}
 
 def login():
 
