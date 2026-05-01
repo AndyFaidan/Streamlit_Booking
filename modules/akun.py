@@ -29,7 +29,7 @@ def extract_group(name):
     return match.group(1) if match else None
 
 # ======================
-# NORMALIZE DATA
+# NORMALIZE CSV ROW
 # ======================
 def normalize_row(r):
     email = str(r["email"]).strip().lower()
@@ -49,6 +49,16 @@ def show(gender):
     conn = get_connection()
     user = st.session_state.user
 
+    # ======================
+    # RESET STATE JIKA PINDAH GENDER
+    # ======================
+    if "last_gender" not in st.session_state:
+        st.session_state.last_gender = gender
+
+    if st.session_state.last_gender != gender:
+        st.session_state.selected_id = None
+        st.session_state.last_gender = gender
+
     tab1, tab2 = st.tabs(["📥 Upload & Input", "📊 Data Akun"])
 
     # ======================
@@ -61,7 +71,6 @@ def show(gender):
 
         if file:
             df = pd.read_csv(file)
-
             st.dataframe(df, use_container_width=True)
 
             if st.button("🚀 Proses Upload", key=f"upload_btn_{gender}"):
@@ -183,20 +192,26 @@ def show(gender):
                 df["name_identity"].str.contains(search, case=False)
             ]
 
+        if df.empty:
+            st.warning("Data tidak ditemukan")
+            return
+
         st.dataframe(df, use_container_width=True)
 
         st.divider()
 
         # ======================
-        # SELECT DATA (FIXED)
+        # SAFE SELECT (ANTI ERROR)
         # ======================
-        if "selected_id" not in st.session_state:
-            st.session_state.selected_id = df["id"].iloc[0]
+        id_list = df["id"].tolist()
+
+        if "selected_id" not in st.session_state or st.session_state.selected_id not in id_list:
+            st.session_state.selected_id = id_list[0]
 
         selected_id = st.selectbox(
             "Pilih Data",
-            df["id"],
-            index=list(df["id"]).index(st.session_state.selected_id),
+            id_list,
+            index=id_list.index(st.session_state.selected_id),
             format_func=lambda x: df[df["id"] == x]["name_identity"].values[0],
             key=f"select_{gender}"
         )
@@ -205,10 +220,10 @@ def show(gender):
 
         selected = df[df["id"] == selected_id].iloc[0]
 
-        st.success(f"Edit: {selected['name_identity']}")
+        st.success(f"✏️ Edit: {selected['name_identity']}")
 
         # ======================
-        # FORM EDIT (AUTO REFRESH)
+        # FORM EDIT
         # ======================
         email = st.text_input(
             "Email",
