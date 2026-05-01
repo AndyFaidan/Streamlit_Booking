@@ -1,18 +1,9 @@
 import streamlit as st
-
-# ======================
-# IMPORT MODULE
-# ======================
 from modules import auth, akun, booking, rekap
 from utils.db import init_db
 
 # ======================
-# INIT DATABASE
-# ======================
-init_db()
-
-# ======================
-# CONFIG PAGE
+# CONFIG (WAJIB DI ATAS)
 # ======================
 st.set_page_config(
     page_title="Booking App",
@@ -21,36 +12,33 @@ st.set_page_config(
 )
 
 # ======================
-# BELUM LOGIN
+# INIT DB
+# ======================
+init_db()
+
+# ======================
+# DEBUG (optional)
+# ======================
+# st.write("APP RUNNING")
+
+# ======================
+# LOGIN CHECK
 # ======================
 if "user" not in st.session_state:
-
-    st.sidebar.title("🔐 Authentication")
-
-    menu = st.sidebar.radio("Menu", ["Login", "Register"])
-
-    if menu == "Login":
-        auth.login()
-    else:
-        auth.register()
-
+    auth.login()
     st.stop()
 
-# ======================
-# SUDAH LOGIN
-# ======================
 user = st.session_state.user
 
 # ======================
-# SIDEBAR USER INFO
+# SIDEBAR
 # ======================
 st.sidebar.success(f"👤 {user['full_name']}")
 st.sidebar.write(f"Role: {user['role']}")
-
 st.sidebar.divider()
 
 # ======================
-# MENU (ROLE BASED)
+# MENU
 # ======================
 if user["role"] == "admin":
     menu = st.sidebar.radio("Menu", [
