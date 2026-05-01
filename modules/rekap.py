@@ -3,8 +3,46 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from utils.db import get_connection
 
+
+# ======================
+# STYLE
+# ======================
+def load_style():
+    st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans&display=swap" rel="stylesheet">
+
+    <style>
+    .stApp {
+        background-color: #f5f5f5;
+        font-family: 'Quattrocento Sans', Helvetica, Arial, sans-serif;
+    }
+
+    .stButton > button {
+        background: black;
+        color: white;
+        border-radius: 10px;
+        height: 42px;
+        font-weight: 600;
+    }
+
+    div[data-testid="stContainer"] {
+        padding: 20px;
+        border-radius: 15px;
+        background: white;
+        border: 1px solid #eee;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# ======================
+# MAIN
+# ======================
 def show():
-    st.title("📊 Dashboard Rekap Booking")
+
+    load_style()
+
+    st.title("Dashboard Rekap")
 
     conn = get_connection()
     user = st.session_state.user
@@ -12,19 +50,23 @@ def show():
     # ======================
     # FILTER
     # ======================
-    col1, col2, col3 = st.columns(3)
+    with st.container(border=True):
 
-    with col1:
-        start_date = st.date_input("Dari Tanggal")
+        st.subheader("Filter Data")
 
-    with col2:
-        end_date = st.date_input("Sampai Tanggal")
+        col1, col2, col3 = st.columns(3)
 
-    with col3:
-        gender_filter = st.selectbox("Gender", ["ALL", "PRIA", "WANITA"])
+        with col1:
+            start_date = st.date_input("Dari Tanggal")
+
+        with col2:
+            end_date = st.date_input("Sampai Tanggal")
+
+        with col3:
+            gender_filter = st.selectbox("Gender", ["ALL", "PRIA", "WANITA"])
 
     # ======================
-    # QUERY (ADMIN vs USER)
+    # QUERY
     # ======================
     if user["role"] == "admin":
         df = pd.read_sql("""
@@ -60,9 +102,6 @@ def show():
         st.warning("Belum ada data booking")
         return
 
-    # ======================
-    # FORMAT DATE
-    # ======================
     df["tanggal_booking"] = pd.to_datetime(df["tanggal_booking"])
 
     # ======================
@@ -79,102 +118,104 @@ def show():
     # ======================
     # METRICS
     # ======================
-    total_booking = len(df)
-    total_group = df["group_id"].nunique()
-    total_leader = len(df[df["type"] == "LEADER"])
-    total_member = len(df[df["type"] == "MEMBER"])
+    with st.container(border=True):
 
-    col1, col2, col3, col4 = st.columns(4)
+        st.subheader("Summary")
 
-    col1.metric("Total Booking", total_booking)
-    col2.metric("Total Group", total_group)
-    col3.metric("Leader", total_leader)
-    col4.metric("Member", total_member)
+        total_booking = len(df)
+        total_group = df["group_id"].nunique()
+        total_leader = len(df[df["type"] == "LEADER"])
+        total_member = len(df[df["type"] == "MEMBER"])
 
-    st.divider()
+        col1, col2, col3, col4 = st.columns(4)
 
-    # ======================
-    # CHART 1 - BOOKING PER HARI
-    # ======================
-    st.subheader("📈 Booking per Hari")
-
-    per_day = df.groupby(df["tanggal_booking"].dt.date).size()
-
-    fig1, ax1 = plt.subplots()
-    per_day.plot(ax=ax1)
-    ax1.set_xlabel("Tanggal")
-    ax1.set_ylabel("Jumlah Booking")
-    st.pyplot(fig1)
+        col1.metric("Total Booking", total_booking)
+        col2.metric("Total Group", total_group)
+        col3.metric("Leader", total_leader)
+        col4.metric("Member", total_member)
 
     # ======================
-    # CHART 2 - GENDER
+    # CHART SEJAJAR
     # ======================
-    st.subheader("👤 Distribusi Gender")
+    with st.container(border=True):
 
-    gender_count = df["gender"].value_counts()
+        col1, col2 = st.columns(2)
 
-    fig2, ax2 = plt.subplots()
-    gender_count.plot(kind="bar", ax=ax2)
-    st.pyplot(fig2)
+        with col1:
+            st.subheader("Booking per Hari")
+            per_day = df.groupby(df["tanggal_booking"].dt.date).size()
 
-    # ======================
-    # CHART 3 - TYPE
-    # ======================
-    st.subheader("👥 Leader vs Member")
+            fig1, ax1 = plt.subplots()
+            per_day.plot(ax=ax1)
+            ax1.set_xlabel("Tanggal")
+            ax1.set_ylabel("Jumlah")
+            st.pyplot(fig1)
 
-    type_count = df["type"].value_counts()
+        with col2:
+            st.subheader("Distribusi Gender")
+            gender_count = df["gender"].value_counts()
 
-    fig3, ax3 = plt.subplots()
-    type_count.plot(kind="bar", ax=ax3)
-    st.pyplot(fig3)
-
-    st.divider()
-
-    # ======================
-    # REKAP PER USER (ADMIN ONLY)
-    # ======================
-    if user["role"] == "admin":
-        st.subheader("👨‍💻 Rekap per User")
-
-        user_summary = df.groupby("user_id").agg(
-            total_booking=("id", "count"),
-            total_group=("group_id", "nunique")
-        ).reset_index()
-
-        st.dataframe(user_summary, use_container_width=True)
-
-        st.divider()
+            fig2, ax2 = plt.subplots()
+            gender_count.plot(kind="bar", ax=ax2)
+            st.pyplot(fig2)
 
     # ======================
-    # REKAP PER GROUP
+    # TYPE CHART
     # ======================
-    st.subheader("📦 Rekap Per Group")
+    with st.container(border=True):
 
-    group_summary = df.groupby("group_id").agg(
-        total_akun=("id", "count"),
-        leader=("type", lambda x: (x == "LEADER").sum()),
-        member=("type", lambda x: (x == "MEMBER").sum()),
-    ).reset_index()
+        st.subheader("Leader vs Member")
 
-    st.dataframe(group_summary, use_container_width=True)
+        type_count = df["type"].value_counts()
 
-    st.divider()
+        fig3, ax3 = plt.subplots()
+        type_count.plot(kind="bar", ax=ax3)
+        st.pyplot(fig3)
 
     # ======================
-    # DETAIL DATA
+    # REKAP TABLE SEJAJAR
     # ======================
-    st.subheader("📄 Detail Booking")
+    with st.container(border=True):
 
-    st.dataframe(df, use_container_width=True)
+        col1, col2 = st.columns(2)
+
+        if user["role"] == "admin":
+            with col1:
+                st.subheader("Rekap per User")
+
+                user_summary = df.groupby("user_id").agg(
+                    total_booking=("id", "count"),
+                    total_group=("group_id", "nunique")
+                ).reset_index()
+
+                st.dataframe(user_summary, height=250)
+
+        with col2:
+            st.subheader("Rekap per Group")
+
+            group_summary = df.groupby("group_id").agg(
+                total_akun=("id", "count"),
+                leader=("type", lambda x: (x == "LEADER").sum()),
+                member=("type", lambda x: (x == "MEMBER").sum()),
+            ).reset_index()
+
+            st.dataframe(group_summary, height=250)
 
     # ======================
-    # EXPORT CSV
+    # DETAIL TABLE
     # ======================
-    csv = df.to_csv(index=False).encode("utf-8")
+    with st.container(border=True):
 
-    st.download_button(
-        label="📥 Download CSV",
-        data=csv,
-        file_name="rekap_booking.csv",
-        mime="text/csv"
-    )
+        st.subheader("Detail Booking")
+
+        st.dataframe(df, height=350)
+
+        # EXPORT
+        csv = df.to_csv(index=False).encode("utf-8")
+
+        st.download_button(
+            label="Download CSV",
+            data=csv,
+            file_name="rekap_booking.csv",
+            mime="text/csv"
+        )
