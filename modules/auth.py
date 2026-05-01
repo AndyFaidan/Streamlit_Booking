@@ -1,83 +1,104 @@
 import streamlit as st
-from utils.db import get_connection
-import hashlib
+import os
 
-# ======================
-# HASH PASSWORD
-# ======================
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+USERS = {
+    "andy": {
+        "id": 1,
+        "password": "123",
+        "full_name": "Andy Sofyan Guspriyanto",
+        "role": "admin"
+    }
+}
 
-
-# ======================
-# LOGIN
-# ======================
 def login():
 
-    st.title("🔐 Login")
+    # ======================
+    # STYLE
+    # ======================
+    st.markdown("""
+    <style>
+    .stApp {
+        background-color: #f5f5f5;
+    }
 
-    conn = get_connection()
+    .title {
+        text-align: center;
+        font-size: 26px;
+        font-weight: 600;
+        margin-top: 20px;
+    }
 
-    username = st.text_input("Username", key="login_user")
-    password = st.text_input("Password", type="password", key="login_pass")
+    .stTextInput > div > div > input {
+        border: 0.5px solid black;   /* hanya garis kotak */
+        border-radius: 10px;
+    }
 
-    if st.button("Login"):
+    .stButton > button {
+        background: black;
+        color: white;
+        border-radius: 10px;
+        height: 45px;
+        font-weight: bold;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-        hashed = hash_password(password)
+    # ======================
+    # CENTER PAGE
+    # ======================
+    col1, col2, col3 = st.columns([1,2,1])
 
-        user = conn.execute("""
-            SELECT * FROM users
-            WHERE username=? AND password=?
-        """, (username, hashed)).fetchone()
+    with col2:
+        with st.container(border=True):
 
-        if user:
-            st.session_state.user = {
-                "id": user[0],
-                "username": user[1],
-                "full_name": user[3],
-                "role": user[4]
-            }
-            st.success("Login berhasil ✅")
-            st.rerun()
-        else:
-            st.error("Username / Password salah")
+            # ======================
+            # LOGO CENTER FIX
+            # ======================
+            c1, c2, c3 = st.columns([1,2,1])
 
+            with c2:
+                BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+                image_path = os.path.join(BASE_DIR, "images", "medina-removebg-preview.png" )
 
-# ======================
-# REGISTER
-# ======================
-def register():
+                st.image(image_path, width=1600)
 
-    st.title("📝 Register")
+            # ======================
+            # TITLE
+            # ======================
+            st.markdown('<div class="title">Sign in</div>', unsafe_allow_html=True)
+           
 
-    conn = get_connection()
+            # ======================
+            # INPUT
+            # ======================
+            username = st.text_input("Username", key="login_user")
+            password = st.text_input("Password", type="password", key="login_pass")
 
-    full_name = st.text_input("Full Name")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+            # ======================
+            # REMEMBER
+            # ======================
+            remember = st.checkbox("Remember me")
 
-    role = st.selectbox("Role", ["user", "admin"])
+            # ======================
+            # BUTTON
+            # ======================
+            if st.button("Continue", use_container_width=True):
 
-    if st.button("Register"):
+                if username in USERS and USERS[username]["password"] == password:
 
-        if not full_name or not username or not password:
-            st.warning("Lengkapi semua field")
-            return
+                    user = USERS[username]
 
-        try:
-            conn.execute("""
-                INSERT INTO users (username, password, full_name, role)
-                VALUES (?, ?, ?, ?)
-            """, (
-                username,
-                hash_password(password),
-                full_name,
-                role
-            ))
-            conn.commit()
+                    st.session_state.user = {
+                        "id": user["id"],
+                        "username": username,
+                        "full_name": user["full_name"],
+                        "role": user["role"]
+                    }
 
-            st.success("Register berhasil ✅")
-            st.info("Silakan login")
+                    st.session_state.remember = remember
 
-        except:
-            st.error("Username sudah digunakan")
+                    st.success(f"Welcome, {user['full_name']} ✅")
+                    st.rerun()
+
+                else:
+                    st.error("Username / Password salah")
