@@ -8,40 +8,47 @@ from utils.db import init_db
 # ======================
 st.set_page_config(
     page_title="Booking App",
-    page_icon="🖤",  # favicon hitam elegan
+    page_icon="🖤",
     layout="wide"
 )
 
 # ======================
-# GLOBAL STYLE (ABU + HITAM)
+# GLOBAL STYLE
 # ======================
 st.markdown("""
 <style>
 
-/* BACKGROUND UTAMA */
+/* ===== BACKGROUND UTAMA ===== */
 .stApp {
-    background-color: #f5f5f5;
+    background-color: #f2f2f2;
 }
 
-/* SIDEBAR */
+/* ===== SIDEBAR GRADIENT ===== */
 section[data-testid="stSidebar"] {
-    background-color: #f5f5f5;
+    background: linear-gradient(
+        180deg,
+        #A6A6A6 0%,
+        #8C8C8C 25%,
+        #707070 50%,
+        #545454 75%,
+        #383838 100%
+    );
 }
 
-/* TEXT SIDEBAR */
+/* ===== TEXT SIDEBAR ===== */
 section[data-testid="stSidebar"] * {
-    color: black !important;
+    color: white !important;
 }
 
-/* CONTAINER CARD */
+/* ===== CARD CONTAINER ===== */
 div[data-testid="stContainer"] {
     background: white;
     padding: 20px;
     border-radius: 12px;
-    border: 1px solid #545454;
+    border: 1px solid #e0e0e0;
 }
 
-/* BUTTON */
+/* ===== BUTTON ===== */
 .stButton > button {
     background-color: black;
     color: white;
@@ -52,7 +59,41 @@ div[data-testid="stContainer"] {
 
 .stButton > button:hover {
     background-color: #333;
-    color: white;
+}
+
+/* ===== OPTION MENU CUSTOM ===== */
+.nav-link {
+    background-color: transparent !important;
+    border-radius: 8px;
+}
+
+/* HOVER */
+.nav-link:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+}
+
+/* SELECTED */
+.nav-link-selected {
+    background-color: white !important;
+    color: black !important;
+    font-weight: bold;
+}
+
+/* ICON */
+.nav-link i {
+    color: #e0e0e0;
+}
+
+/* ===== LOGOUT BUTTON ===== */
+.stSidebar button {
+    background-color: white;
+    color: black;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+.stSidebar button:hover {
+    background-color: #d9d9d9;
 }
 
 </style>
@@ -64,7 +105,7 @@ div[data-testid="stContainer"] {
 init_db()
 
 # ======================
-# LOGIN
+# LOGIN CHECK
 # ======================
 if "user" not in st.session_state:
     auth.login()
@@ -81,7 +122,7 @@ with st.sidebar:
     st.caption(f"Role: {user['role']}")
     st.divider()
 
-    # ADMIN
+    # ADMIN MENU
     if user["role"] == "admin":
         selected = option_menu(
             menu_title=None,
@@ -90,29 +131,25 @@ with st.sidebar:
             default_index=0,
             styles={
                 "container": {
-                    "background-color": "#111111",
-                    "padding": "5px"
+                    "background-color": "transparent",
                 },
                 "icon": {
-                    "color": "#bbbbbb",
-                    "font-size": "18px"
+                    "color": "#e0e0e0",
                 },
                 "nav-link": {
-                    "color": "#eeeeee",
-                    "font-size": "14px",
-                    "text-align": "left",
+                    "color": "white",
                     "margin": "4px",
                     "border-radius": "8px",
                 },
                 "nav-link-selected": {
-                    "background-color": "#e6e6e6",
+                    "background-color": "#ffffff",
                     "color": "black",
                     "font-weight": "bold",
                 },
             }
         )
 
-    # USER
+    # USER MENU
     else:
         selected = option_menu(
             menu_title=None,
@@ -121,22 +158,18 @@ with st.sidebar:
             default_index=0,
             styles={
                 "container": {
-                    "background-color": "#111111",
-                    "padding": "5px"
+                    "background-color": "transparent",
                 },
                 "icon": {
-                    "color": "#bbbbbb",
-                    "font-size": "18px"
+                    "color": "#e0e0e0",
                 },
                 "nav-link": {
-                    "color": "#eeeeee",
-                    "font-size": "14px",
-                    "text-align": "left",
+                    "color": "white",
                     "margin": "4px",
                     "border-radius": "8px",
                 },
                 "nav-link-selected": {
-                    "background-color": "#e6e6e6",
+                    "background-color": "#ffffff",
                     "color": "black",
                     "font-weight": "bold",
                 },
