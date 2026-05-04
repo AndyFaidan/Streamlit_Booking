@@ -13,98 +13,84 @@ st.set_page_config(
 )
 
 # ======================
-# GLOBAL STYLE
+# STYLE
 # ======================
 st.markdown("""
 <style>
 
-/* ===== BACKGROUND UTAMA ===== */
+/* BACKGROUND */
 .stApp {
-    background-color: #f2f2f2;
+    background-color: #e9e9e9;
 }
 
-/* ===== SIDEBAR GRADIENT ===== */
+/* SIDEBAR */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(
-        180deg,
-        #A6A6A6 0%,
-        #8C8C8C 25%,
-        #707070 50%,
-        #545454 75%,
-        #383838 100%
-    );
+    background-color: #e9e9e9;
+    padding: 15px;
 }
 
-/* ===== TEXT SIDEBAR ===== */
-section[data-testid="stSidebar"] * {
-    color: white !important;
-}
-
-/* ===== OPTION MENU ITEM ===== */
-.nav-link {
-    background-color: transparent !important;
-    border-radius: 12px;
-    padding: 10px;
-    border: 1px solid transparent;
-    color: white !important;
-    transition: all 0.2s ease-in-out;
-}
-
-/* HOVER */
-.nav-link:hover {
-    background-color: rgba(255,255,255,0.08) !important;
-}
-
-/* ===== SELECTED MENU ===== */
-.nav-link-selected {
-    background-color: #f5f5f5 !important;   /* abu terang */
-    color: black !important;
-    font-weight: 600;
-
-    border: 1px solid #d9d9d9 !important;  /* abu cerah */
-}
-
-/* ICON DEFAULT */
-.nav-link i {
-    color: #dddddd;
-}
-
-/* ICON SELECTED */
-.nav-link-selected i {
-    color: black !important;
-}
-
-/* ===== CARD CONTAINER ===== */
-div[data-testid="stContainer"] {
-    background: white;
+/* CARD */
+.card {
+    background: #dcdcdc;
     padding: 20px;
-    border-radius: 12px;
-    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    margin-bottom: 20px;
 }
 
-/* ===== BUTTON ===== */
-.stButton > button {
-    background-color: black;
-    color: white;
-    border-radius: 10px;
-    height: 42px;
+/* USER BOX */
+.user-box {
+    text-align: center;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+/* SUBTEXT */
+.user-role {
+    font-size: 14px;
+    color: #555;
+}
+
+/* TITLE */
+.menu-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+/* LINE */
+.divider {
+    height: 1px;
+    background: #bdbdbd;
+    margin: 10px 0 20px 0;
+}
+
+/* OPTION MENU */
+.nav-link {
+    border-radius: 20px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+}
+
+/* SELECTED */
+.nav-link-selected {
+    background-color: black !important;
+    color: white !important;
     font-weight: 600;
 }
 
-.stButton > button:hover {
-    background-color: #333;
-}
-
-/* ===== LOGOUT BUTTON ===== */
-.stSidebar button {
-    background-color: white;
+/* ICON */
+.nav-link i {
     color: black;
-    border-radius: 10px;
-    font-weight: bold;
 }
 
-.stSidebar button:hover {
-    background-color: #d9d9d9;
+/* LOGOUT BUTTON */
+.logout-btn button {
+    background-color: black !important;
+    color: white !important;
+    border-radius: 20px !important;
+    height: 50px;
+    font-size: 16px;
+    font-weight: 600;
 }
 
 </style>
@@ -116,7 +102,7 @@ div[data-testid="stContainer"] {
 init_db()
 
 # ======================
-# LOGIN CHECK
+# LOGIN
 # ======================
 if "user" not in st.session_state:
     auth.login()
@@ -125,15 +111,25 @@ if "user" not in st.session_state:
 user = st.session_state.user
 
 # ======================
-# SIDEBAR MENU
+# SIDEBAR
 # ======================
 with st.sidebar:
 
-    st.markdown(f"### 👤 {user['full_name']}")
-    st.caption(f"Role: {user['role']}")
-    st.divider()
+    # USER CARD
+    st.markdown(f"""
+    <div class="card user-box">
+        {user['full_name']}<br>
+        <span class="user-role">{user['role']}</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # ADMIN MENU
+    # MENU CARD
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+
+    st.markdown('<div class="menu-title">📺 Main Menu</div>', unsafe_allow_html=True)
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+    # MENU
     if user["role"] == "admin":
         selected = option_menu(
             menu_title=None,
@@ -141,25 +137,11 @@ with st.sidebar:
             icons=["person", "person", "calendar-check", "bar-chart"],
             default_index=0,
             styles={
-                "container": {
-                    "background-color": "transparent",
-                },
-                "icon": {
-                    "color": "#dddddd",
-                },
-                "nav-link": {
-                    "color": "white",
-                    "margin": "4px",
-                    "border-radius": "8px",
-                },
-                "nav-link-selected": {
-                    "background-color": "#f5f5f5",
-                    "color": "black",
-                },
+                "container": {"background-color": "transparent"},
+                "nav-link": {"color": "black"},
+                "nav-link-selected": {"background-color": "black"},
             }
         )
-
-    # USER MENU
     else:
         selected = option_menu(
             menu_title=None,
@@ -167,30 +149,20 @@ with st.sidebar:
             icons=["calendar-check", "bar-chart"],
             default_index=0,
             styles={
-                "container": {
-                    "background-color": "transparent",
-                },
-                "icon": {
-                    "color": "#dddddd",
-                },
-                "nav-link": {
-                    "color": "white",
-                    "margin": "4px",
-                    "border-radius": "8px",
-                },
-                "nav-link-selected": {
-                    "background-color": "#f5f5f5",
-                    "color": "black",
-                },
+                "container": {"background-color": "transparent"},
+                "nav-link": {"color": "black"},
+                "nav-link-selected": {"background-color": "black"},
             }
         )
 
-    st.divider()
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # LOGOUT
+    st.markdown('<div class="logout-btn">', unsafe_allow_html=True)
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.clear()
         st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================
 # ROUTING
