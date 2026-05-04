@@ -3,135 +3,156 @@ import pandas as pd
 from utils.db import get_connection
 from datetime import datetime
 
+# ======================
+# STYLE
+# ======================
+def load_style():
+    st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Quattrocento+Sans&display=swap" rel="stylesheet">
+
+    <style>
+    .stApp {
+        background-color: #f5f5f5;
+        font-family: 'Quattrocento Sans', Helvetica, Arial, sans-serif;
+    }
+
+    .stTextInput input,
+    .stSelectbox div[data-baseweb="select"] {
+        border-radius: 10px;
+        border: 1px solid #ccc;
+        height: 42px;
+    }
+
+    .stButton > button {
+        background: black;
+        color: white;
+        border-radius: 10px;
+        height: 42px;
+        font-weight: 600;
+    }
+
+    div[data-testid="stContainer"] {
+        padding: 25px;
+        border-radius: 15px;
+        background: white;
+        border: 1px solid #eee;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# ======================
+# MAIN
+# ======================
 def show():
-    st.title("📅 Booking (Auto Gender)")
+
+    load_style()
+
+    st.title("Booking")
 
     conn = get_connection()
     user = st.session_state.user
 
     # ======================
-    # PILIH GENDER
+    # FORM BOOKING
     # ======================
-    gender = st.selectbox(
-        "Pilih Gender",
-        ["PRIA", "WANITA"],
-        key="gender_booking"
-    )
+    with st.container(border=True):
 
-    # ======================
-    # AMBIL AKUN READY
-    # ======================
-    akun = pd.read_sql("""
-        SELECT * FROM akun_nusuk
-        WHERE user_id=? 
-        AND status='READY'
-        AND gender=?
-    """, conn, params=(user["id"], gender))
+        st.subheader("Form Booking")
 
-    if akun.empty:
-        st.warning(f"Tidak ada akun READY untuk {gender}")
-    else:
-        # ======================
-        # PILIH AKUN
-        # ======================
-        akun_map = {
-            f"{r['name_identity']} | {r['email']} (G{r['group_id']})": r["id"]
-            for _, r in akun.iterrows()
-        }
+        gender = st.selectbox("Pilih Gender", ["PRIA", "WANITA"])
 
-        selected = st.selectbox(
-            "Pilih Akun",
-            list(akun_map.keys()),
-            key=f"select_booking_{gender}"
-        )
+        akun = pd.read_sql("""
+            SELECT * FROM akun_nusuk
+            WHERE user_id=? 
+            AND status='READY'
+            AND gender=?
+        """, conn, params=(user["id"], gender))
 
-        akun_id = akun_map[selected]
+        if akun.empty:
+            st.warning(f"Tidak ada akun READY untuk {gender}")
 
-        # ======================
-        # INPUT TANGGAL
-        # ======================
-        col1, col2 = st.columns(2)
+        else:
+            akun_map = {
+                f"{r['name_identity']} | {r['email']} (G{r['group_id']})": r["id"]
+                for _, r in akun.iterrows()
+            }
 
-        with col1:
-            tgl = st.date_input("Tanggal", key=f"tgl_{gender}")
+            selected = st.selectbox("Pilih Akun", list(akun_map.keys()))
+            akun_id = akun_map[selected]
 
-        with col2:
-            jam = st.time_input("Jam", key=f"jam_{gender}")
+            col1, col2 = st.columns(2)
 
-        # ======================
-        # BOOKING
-        # ======================
-        if st.button("🚀 Booking", key=f"btn_booking_{gender}"):
+            with col1:
+                tgl = st.date_input("Tanggal")
 
-            conn.execute("""
-                INSERT INTO booking
-                (user_id, akun_id, gender, tanggal_booking, qty, status)
-                VALUES (?,?,?,?,?,?)
-            """, (
-                user["id"],
-                akun_id,
-                gender,
-                datetime.combine(tgl, jam),
-                1,
-                "BOOKED"
-            ))
+            with col2:
+                jam = st.time_input("Jam")
 
-            conn.execute("""
-                UPDATE akun_nusuk
-                SET status='BOOKED'
-                WHERE id=?
-            """, (akun_id,))
+            if st.button("Booking", use_container_width=True):
 
-            conn.commit()
+                conn.execute("""
+                    INSERT INTO booking
+                    (user_id, akun_id, gender, tanggal_booking, qty, status)
+                    VALUES (?,?,?,?,?,?)
+                """, (
+                    user["id"],
+                    akun_id,
+                    gender,
+                    datetime.combine(tgl, jam),
+                    1,
+                    "BOOKED"
+                ))
 
-            st.success(f"Booking {gender} berhasil ✅")
-            st.rerun()
+                conn.execute("""
+                    UPDATE akun_nusuk
+                    SET status='BOOKED'
+                    WHERE id=?
+                """, (akun_id,))
+
+                conn.commit()
+
+                st.success("Booking berhasil")
+                st.rerun()
 
     st.divider()
 
     # ======================
     # DATA BOOKING
     # ======================
-    st.subheader(f"📊 Data Booking {gender}")
+    with st.container(border=True):
 
-    df = pd.read_sql("""
-        SELECT 
-            b.id,
-            a.name_identity,
-            a.email,
-            a.group_id,
-            b.tanggal_booking
-        FROM booking b
-        JOIN akun_nusuk a ON b.akun_id=a.id
-        WHERE b.user_id=? AND b.gender=?
-        ORDER BY b.id DESC
-    """, conn, params=(user["id"], gender))
+        st.subheader("Data Booking")
 
-    if df.empty:
-        st.info("Belum ada booking")
+        df = pd.read_sql("""
+            SELECT 
+                b.id,
+                a.name_identity,
+                a.email,
+                a.group_id,
+                b.tanggal_booking
+            FROM booking b
+            JOIN akun_nusuk a ON b.akun_id=a.id
+            WHERE b.user_id=?
+            ORDER BY b.id DESC
+        """, conn, params=(user["id"],))
 
-    # convert tanggal
-    df["tanggal_booking"] = pd.to_datetime(df["tanggal_booking"], errors='coerce')
+        if df.empty:
+            st.info("Belum ada booking")
+            return
 
-    # ======================
-    # CHECKLIST CANCEL
-    # ======================
-    if not df.empty:
-
-        df["Cancel?"] = False
-
-        edited_df = st.data_editor(
-            df,
-            use_container_width=True,
-            key=f"editor_{gender}"
-        )
+        df["tanggal_booking"] = pd.to_datetime(df["tanggal_booking"])
 
         # ======================
         # CANCEL MULTI
         # ======================
-        if st.button("❌ Cancel yang dipilih", key=f"cancel_{gender}"):
+        df["Cancel"] = False
 
-            selected_rows = edited_df[edited_df["Cancel?"] == True]
+        edited_df = st.data_editor(df, use_container_width=True)
+
+        if st.button("Cancel yang dipilih", use_container_width=True):
+
+            selected_rows = edited_df[edited_df["Cancel"] == True]
 
             if selected_rows.empty:
                 st.warning("Tidak ada yang dipilih")
@@ -149,8 +170,7 @@ def show():
                     conn.execute("DELETE FROM booking WHERE id=?", (row["id"],))
 
                 conn.commit()
-
-                st.success(f"{len(selected_rows)} booking di-cancel ✅")
+                st.success("Booking berhasil dihapus")
                 st.rerun()
 
     st.divider()
@@ -158,49 +178,38 @@ def show():
     # ======================
     # EDIT BOOKING
     # ======================
-    st.subheader("✏️ Edit Booking")
+    with st.container(border=True):
 
-    if df.empty:
-        st.warning("Tidak ada data untuk diedit")
-        return
+        st.subheader("Edit Booking")
 
-    selected_id = st.selectbox(
-        "Pilih Booking",
-        df["id"],
-        format_func=lambda x: f"{df[df['id']==x]['name_identity'].values[0]} | {df[df['id']==x]['email'].values[0]}",
-        key=f"edit_select_{gender}"
-    )
-
-    row = df[df["id"] == selected_id].iloc[0]
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        new_tgl = st.date_input(
-            "Tanggal Baru",
-            value=row["tanggal_booking"].date(),
-            key=f"edit_tgl_{gender}"
+        selected_id = st.selectbox(
+            "Pilih Booking",
+            df["id"],
+            format_func=lambda x: f"{df[df['id']==x]['name_identity'].values[0]}"
         )
 
-    with col2:
-        new_jam = st.time_input(
-            "Jam Baru",
-            value=row["tanggal_booking"].time(),
-            key=f"edit_jam_{gender}"
-        )
+        row = df[df["id"] == selected_id].iloc[0]
 
-    if st.button("💾 Update Booking", key=f"update_{gender}"):
+        col1, col2 = st.columns(2)
 
-        conn.execute("""
-            UPDATE booking
-            SET tanggal_booking=?
-            WHERE id=?
-        """, (
-            datetime.combine(new_tgl, new_jam),
-            selected_id
-        ))
+        with col1:
+            new_tgl = st.date_input("Tanggal Baru", value=row["tanggal_booking"].date())
 
-        conn.commit()
+        with col2:
+            new_jam = st.time_input("Jam Baru", value=row["tanggal_booking"].time())
 
-        st.success("Booking berhasil diupdate ✅")
-        st.rerun()
+        if st.button("Update Booking", use_container_width=True):
+
+            conn.execute("""
+                UPDATE booking
+                SET tanggal_booking=?
+                WHERE id=?
+            """, (
+                datetime.combine(new_tgl, new_jam),
+                selected_id
+            ))
+
+            conn.commit()
+
+            st.success("Booking berhasil diupdate")
+            st.rerun()
