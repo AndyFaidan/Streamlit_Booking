@@ -4,22 +4,57 @@ from modules import auth, akun, booking, rekap
 from utils.db import init_db
 
 # ======================
-# CONFIG (WAJIB DI ATAS)
+# CONFIG
 # ======================
 st.set_page_config(
     page_title="Booking App",
-    page_icon="📊",
+    page_icon="🖤",  # favicon hitam elegan
     layout="wide"
 )
 
 # ======================
-# STYLE SIDEBAR HITAM
+# GLOBAL STYLE (ABU + HITAM)
 # ======================
 st.markdown("""
 <style>
-section[data-testid="stSidebar"] {
-    background-color: white;
+
+/* BACKGROUND UTAMA */
+.stApp {
+    background-color: #f1f1f1;
 }
+
+/* SIDEBAR */
+section[data-testid="stSidebar"] {
+    background-color: #111111;
+}
+
+/* TEXT SIDEBAR */
+section[data-testid="stSidebar"] * {
+    color: #ffffff !important;
+}
+
+/* CONTAINER CARD */
+div[data-testid="stContainer"] {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+}
+
+/* BUTTON */
+.stButton > button {
+    background-color: black;
+    color: white;
+    border-radius: 10px;
+    height: 42px;
+    font-weight: 600;
+}
+
+.stButton > button:hover {
+    background-color: #333;
+    color: white;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -29,7 +64,7 @@ section[data-testid="stSidebar"] {
 init_db()
 
 # ======================
-# LOGIN CHECK
+# LOGIN
 # ======================
 if "user" not in st.session_state:
     auth.login()
@@ -38,7 +73,7 @@ if "user" not in st.session_state:
 user = st.session_state.user
 
 # ======================
-# SIDEBAR + OPTION MENU
+# SIDEBAR MENU
 # ======================
 with st.sidebar:
 
@@ -46,7 +81,7 @@ with st.sidebar:
     st.caption(f"Role: {user['role']}")
     st.divider()
 
-    # ADMIN MENU
+    # ADMIN
     if user["role"] == "admin":
         selected = option_menu(
             menu_title=None,
@@ -55,29 +90,29 @@ with st.sidebar:
             default_index=0,
             styles={
                 "container": {
-                    "background-color": "#000000",
+                    "background-color": "#111111",
                     "padding": "5px"
                 },
                 "icon": {
-                    "color": "white",
+                    "color": "#bbbbbb",
                     "font-size": "18px"
                 },
                 "nav-link": {
-                    "color": "white",
+                    "color": "#eeeeee",
                     "font-size": "14px",
                     "text-align": "left",
-                    "margin": "5px",
+                    "margin": "4px",
                     "border-radius": "8px",
                 },
                 "nav-link-selected": {
-                    "background-color": "white",
+                    "background-color": "#e6e6e6",
                     "color": "black",
                     "font-weight": "bold",
                 },
             }
         )
 
-    # USER MENU
+    # USER
     else:
         selected = option_menu(
             menu_title=None,
@@ -86,22 +121,22 @@ with st.sidebar:
             default_index=0,
             styles={
                 "container": {
-                    "background-color": "#000000",
+                    "background-color": "#111111",
                     "padding": "5px"
                 },
                 "icon": {
-                    "color": "white",
+                    "color": "#bbbbbb",
                     "font-size": "18px"
                 },
                 "nav-link": {
-                    "color": "white",
+                    "color": "#eeeeee",
                     "font-size": "14px",
                     "text-align": "left",
-                    "margin": "5px",
+                    "margin": "4px",
                     "border-radius": "8px",
                 },
                 "nav-link-selected": {
-                    "background-color": "white",
+                    "background-color": "#e6e6e6",
                     "color": "black",
                     "font-weight": "bold",
                 },
