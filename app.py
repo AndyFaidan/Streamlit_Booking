@@ -20,7 +20,7 @@ st.markdown("""
 
 /* BACKGROUND UTAMA */
 .stApp {
-    background-color: #f1f1f1;
+    background-color: #f5f5f5;
 }
 
 /* SIDEBAR */
