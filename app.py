@@ -4,11 +4,11 @@ from modules import auth, akun, booking, rekap
 from utils.db import init_db
 
 # ======================
-# CONFIG
+# CONFIG (WAJIB PALING ATAS)
 # ======================
 st.set_page_config(
     page_title="Booking App",
-    page_icon="🖤",
+    page_icon="📊",
     layout="wide"
 )
 
@@ -22,99 +22,29 @@ init_db()
 # ======================
 st.markdown("""
 <style>
-
-/* ===== BACKGROUND ===== */
 .stApp {
     background-color: #f5f5f5;
     font-family: 'Quattrocento Sans', sans-serif;
 }
 
-/* ===== SIDEBAR ===== */
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background-color: #f5f5f5;
-    padding: 15px;
+    background-color: #ffffff;
 }
 
-/* ===== USER BOX ===== */
+/* Hilangkan garis atas */
+section[data-testid="stSidebar"] hr {
+    margin-top: 10px;
+}
+
+/* User info */
 .user-box {
-    padding: 15px;
-    border-radius: 15px;
-    background: #e9e9e9;
-    text-align: center;
-    margin-bottom: 20px;
-    font-weight: 600;
-}
-
-/* ===== MENU CARD ===== */
-.menu-card {
-    background: #ffffff;
-    padding: 15px;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-/* ===== TITLE ===== */
-.menu-title {
-    font-size: 20px;
-    font-weight: 700;
-    margin-bottom: 10px;
-}
-
-/* ===== DIVIDER ===== */
-.divider {
-    height: 1px;
-    background: #ddd;
-    margin: 10px 0 15px 0;
-}
-
-/* ===== OPTION MENU ===== */
-.nav-link {
-    font-size: 15px;
-    text-align: left;
-    margin: 5px;
     padding: 10px;
-    border-radius: 12px;
-    color: black !important;
+    border-radius: 10px;
+    background: #f1f1f1;
+    text-align: center;
+    margin-bottom: 15px;
 }
-
-/* HOVER */
-.nav-link:hover {
-    background-color: #eeeeee !important;
-}
-
-/* SELECTED (HITAM FULL) */
-.nav-link-selected {
-    background-color: black !important;
-    color: white !important;
-    font-weight: 600;
-    border-radius: 15px;
-}
-
-/* ICON DEFAULT */
-.nav-link i {
-    color: black;
-}
-
-/* ICON SELECTED */
-.nav-link-selected i {
-    color: white !important;
-}
-
-/* ===== LOGOUT BUTTON ===== */
-.logout-btn button {
-    background-color: black !important;
-    color: white !important;
-    border-radius: 20px !important;
-    height: 48px;
-    font-size: 15px;
-    font-weight: 600;
-}
-
-.logout-btn button:hover {
-    background-color: #333 !important;
-}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -132,19 +62,12 @@ user = st.session_state.user
 # ======================
 with st.sidebar:
 
-    # USER BOX
     st.markdown(f"""
     <div class="user-box">
-        {user['full_name']}<br>
+        <b>{user['full_name']}</b><br>
         <small>{user['role']}</small>
     </div>
     """, unsafe_allow_html=True)
-
-    # MENU CARD START
-    st.markdown('<div class="menu-card">', unsafe_allow_html=True)
-
-    st.markdown('<div class="menu-title">📺 Main Menu</div>', unsafe_allow_html=True)
-    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
     # ======================
     # MENU ADMIN / USER
@@ -157,27 +80,57 @@ with st.sidebar:
         icons = ["calendar-check", "bar-chart"]
 
     selected = option_menu(
-        menu_title=None,
-        options=menu_list,
+        "Main Menu",
+        menu_list,
         icons=icons,
+        menu_icon="cast",
         default_index=0,
+
+        # ======================
+        # STYLE MENU (HITAM)
+        # ======================
         styles={
-            "container": {"background-color": "transparent"},
-            "icon": {"color": "black", "font-size": "18px"},
-            "nav-link": {"color": "black"},
-            "nav-link-selected": {"background-color": "black"},
+            "container": {
+                "padding": "5px",
+                "background-color": "#ffffff",
+            },
+
+            "icon": {
+                "color": "black",
+                "font-size": "18px"
+            },
+
+            "nav-link": {
+                "font-size": "15px",
+                "text-align": "left",
+                "margin": "5px",
+                "padding": "10px",
+                "--hover-color": "#eeeeee",
+                "color": "black",
+                "border-radius": "10px",
+            },
+
+            # 🔥 SELECTED HITAM
+            "nav-link-selected": {
+                "background-color": "#000000",
+                "color": "white",
+                "font-weight": "600",
+                "border-radius": "12px",
+            },
+
+            "menu-title": {
+                "font-size": "20px",
+                "font-weight": "600",
+                "color": "black"
+            }
         }
     )
 
-    # MENU CARD END
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.divider()
 
-    # LOGOUT
-    st.markdown('<div class="logout-btn">', unsafe_allow_html=True)
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state.clear()
         st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ======================
 # ROUTING
