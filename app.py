@@ -13,96 +13,113 @@ st.set_page_config(
 )
 
 # ======================
-# STYLE
+# INIT DB
+# ======================
+init_db()
+
+# ======================
+# STYLE GLOBAL
 # ======================
 st.markdown("""
 <style>
 
-/* BACKGROUND */
+/* ===== BACKGROUND ===== */
 .stApp {
-    background-color: #e9e9e9;
+    background-color: #f5f5f5;
+    font-family: 'Quattrocento Sans', sans-serif;
 }
 
-/* SIDEBAR */
+/* ===== SIDEBAR ===== */
 section[data-testid="stSidebar"] {
-    background-color: #e9e9e9;
+    background-color: #f5f5f5;
     padding: 15px;
 }
 
-/* CARD */
-.card {
-    background: #dcdcdc;
-    padding: 20px;
+/* ===== USER BOX ===== */
+.user-box {
+    padding: 15px;
+    border-radius: 15px;
+    background: #e9e9e9;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+/* ===== MENU CARD ===== */
+.menu-card {
+    background: #ffffff;
+    padding: 15px;
     border-radius: 20px;
     margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
-/* USER BOX */
-.user-box {
-    text-align: center;
-    font-weight: 600;
-    font-size: 18px;
-}
-
-/* SUBTEXT */
-.user-role {
-    font-size: 14px;
-    color: #555;
-}
-
-/* TITLE */
+/* ===== TITLE ===== */
 .menu-title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     margin-bottom: 10px;
 }
 
-/* LINE */
+/* ===== DIVIDER ===== */
 .divider {
     height: 1px;
-    background: #bdbdbd;
-    margin: 10px 0 20px 0;
+    background: #ddd;
+    margin: 10px 0 15px 0;
 }
 
-/* OPTION MENU */
+/* ===== OPTION MENU ===== */
 .nav-link {
-    border-radius: 20px !important;
-    padding: 12px !important;
-    margin-bottom: 10px !important;
+    font-size: 15px;
+    text-align: left;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 12px;
+    color: black !important;
 }
 
-/* SELECTED */
+/* HOVER */
+.nav-link:hover {
+    background-color: #eeeeee !important;
+}
+
+/* SELECTED (HITAM FULL) */
 .nav-link-selected {
     background-color: black !important;
     color: white !important;
     font-weight: 600;
+    border-radius: 15px;
 }
 
-/* ICON */
+/* ICON DEFAULT */
 .nav-link i {
     color: black;
 }
 
-/* LOGOUT BUTTON */
+/* ICON SELECTED */
+.nav-link-selected i {
+    color: white !important;
+}
+
+/* ===== LOGOUT BUTTON ===== */
 .logout-btn button {
     background-color: black !important;
     color: white !important;
     border-radius: 20px !important;
-    height: 50px;
-    font-size: 16px;
+    height: 48px;
+    font-size: 15px;
     font-weight: 600;
+}
+
+.logout-btn button:hover {
+    background-color: #333 !important;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # ======================
-# INIT DB
-# ======================
-init_db()
-
-# ======================
-# LOGIN
+# LOGIN CHECK
 # ======================
 if "user" not in st.session_state:
     auth.login()
@@ -115,46 +132,44 @@ user = st.session_state.user
 # ======================
 with st.sidebar:
 
-    # USER CARD
+    # USER BOX
     st.markdown(f"""
-    <div class="card user-box">
+    <div class="user-box">
         {user['full_name']}<br>
-        <span class="user-role">{user['role']}</span>
+        <small>{user['role']}</small>
     </div>
     """, unsafe_allow_html=True)
 
-    # MENU CARD
-    st.markdown('<div class="card">', unsafe_allow_html=True)
+    # MENU CARD START
+    st.markdown('<div class="menu-card">', unsafe_allow_html=True)
 
     st.markdown('<div class="menu-title">📺 Main Menu</div>', unsafe_allow_html=True)
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-    # MENU
+    # ======================
+    # MENU ADMIN / USER
+    # ======================
     if user["role"] == "admin":
-        selected = option_menu(
-            menu_title=None,
-            options=["Akun PRIA", "Akun WANITA", "Booking", "Rekap"],
-            icons=["person", "person", "calendar-check", "bar-chart"],
-            default_index=0,
-            styles={
-                "container": {"background-color": "transparent"},
-                "nav-link": {"color": "black"},
-                "nav-link-selected": {"background-color": "black"},
-            }
-        )
+        menu_list = ["Akun PRIA", "Akun WANITA", "Booking", "Rekap"]
+        icons = ["person", "person-fill", "calendar-check", "bar-chart"]
     else:
-        selected = option_menu(
-            menu_title=None,
-            options=["Booking", "Rekap"],
-            icons=["calendar-check", "bar-chart"],
-            default_index=0,
-            styles={
-                "container": {"background-color": "transparent"},
-                "nav-link": {"color": "black"},
-                "nav-link-selected": {"background-color": "black"},
-            }
-        )
+        menu_list = ["Booking", "Rekap"]
+        icons = ["calendar-check", "bar-chart"]
 
+    selected = option_menu(
+        menu_title=None,
+        options=menu_list,
+        icons=icons,
+        default_index=0,
+        styles={
+            "container": {"background-color": "transparent"},
+            "icon": {"color": "black", "font-size": "18px"},
+            "nav-link": {"color": "black"},
+            "nav-link-selected": {"background-color": "black"},
+        }
+    )
+
+    # MENU CARD END
     st.markdown('</div>', unsafe_allow_html=True)
 
     # LOGOUT
