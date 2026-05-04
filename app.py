@@ -30,7 +30,7 @@ section[data-testid="stSidebar"] {
 
 /* TEXT SIDEBAR */
 section[data-testid="stSidebar"] * {
-    color: #ffffff !important;
+    color: black !important;
 }
 
 /* CONTAINER CARD */
