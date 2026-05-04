@@ -25,7 +25,7 @@ st.markdown("""
 
 /* SIDEBAR */
 section[data-testid="stSidebar"] {
-    background-color: #111111;
+    background-color: #f5f5f5;
 }
 
 /* TEXT SIDEBAR */
