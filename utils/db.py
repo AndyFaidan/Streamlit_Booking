@@ -9,7 +9,7 @@ DB_PATH = "data/database.db"
 def get_connection():
     os.makedirs("data", exist_ok=True)
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.execute("PRAGMA foreign_keys = ON")  # penting!
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -34,7 +34,22 @@ def init_db():
     """)
 
     # ======================
-    # AKUN (FIXED)
+    # SEED USERS (PENTING BANGET)
+    # ======================
+    users = [
+        (1, "andy", "123", "Andy Sofyan Guspriyanto", "admin"),
+        (2, "zedd", "1933", "Peri Romadon", "admin"),
+        (3, "ariefksf", "123", "Arief Zaenal Hakim", "admin"),
+    ]
+
+    for u in users:
+        c.execute("""
+            INSERT OR IGNORE INTO users (id, username, password, full_name, role)
+            VALUES (?, ?, ?, ?, ?)
+        """, u)
+
+    # ======================
+    # AKUN
     # ======================
     c.execute("""
     CREATE TABLE IF NOT EXISTS akun_nusuk (
@@ -50,16 +65,14 @@ def init_db():
         status TEXT DEFAULT 'READY',
         checklist BOOLEAN DEFAULT 0,
 
-        -- 🔒 ANTI DUPLIKAT
         UNIQUE(user_id, email, gender),
 
-        -- 🔗 RELASI
         FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )
     """)
 
     # ======================
-    # BOOKING (FIXED)
+    # BOOKING
     # ======================
     c.execute("""
     CREATE TABLE IF NOT EXISTS booking (
@@ -71,14 +84,13 @@ def init_db():
         qty INTEGER DEFAULT 1,
         status TEXT DEFAULT 'BOOKED',
 
-        -- 🔗 RELASI
         FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
         FOREIGN KEY(akun_id) REFERENCES akun_nusuk(id) ON DELETE CASCADE
     )
     """)
 
     # ======================
-    # INDEX (BIAR CEPAT)
+    # INDEX
     # ======================
     c.execute("CREATE INDEX IF NOT EXISTS idx_email ON akun_nusuk(email)")
     c.execute("CREATE INDEX IF NOT EXISTS idx_group ON akun_nusuk(group_id)")
