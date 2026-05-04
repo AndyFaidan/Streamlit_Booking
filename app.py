@@ -40,6 +40,40 @@ section[data-testid="stSidebar"] * {
     color: white !important;
 }
 
+/* ===== OPTION MENU ITEM ===== */
+.nav-link {
+    background-color: transparent !important;
+    border-radius: 12px;
+    padding: 10px;
+    border: 1px solid transparent;
+    color: white !important;
+    transition: all 0.2s ease-in-out;
+}
+
+/* HOVER */
+.nav-link:hover {
+    background-color: rgba(255,255,255,0.08) !important;
+}
+
+/* ===== SELECTED MENU ===== */
+.nav-link-selected {
+    background-color: #f5f5f5 !important;   /* abu terang */
+    color: black !important;
+    font-weight: 600;
+
+    border: 1px solid #d9d9d9 !important;  /* abu cerah */
+}
+
+/* ICON DEFAULT */
+.nav-link i {
+    color: #dddddd;
+}
+
+/* ICON SELECTED */
+.nav-link-selected i {
+    color: black !important;
+}
+
 /* ===== CARD CONTAINER ===== */
 div[data-testid="stContainer"] {
     background: white;
@@ -59,29 +93,6 @@ div[data-testid="stContainer"] {
 
 .stButton > button:hover {
     background-color: #333;
-}
-
-/* ===== OPTION MENU CUSTOM ===== */
-.nav-link {
-    background-color: transparent !important;
-    border-radius: 8px;
-}
-
-/* HOVER */
-.nav-link:hover {
-    background-color: rgba(255,255,255,0.1) !important;
-}
-
-/* SELECTED */
-.nav-link-selected {
-    background-color: white !important;
-    color: black !important;
-    font-weight: bold;
-}
-
-/* ICON */
-.nav-link i {
-    color: #e0e0e0;
 }
 
 /* ===== LOGOUT BUTTON ===== */
@@ -134,7 +145,7 @@ with st.sidebar:
                     "background-color": "transparent",
                 },
                 "icon": {
-                    "color": "#e0e0e0",
+                    "color": "#dddddd",
                 },
                 "nav-link": {
                     "color": "white",
@@ -142,9 +153,8 @@ with st.sidebar:
                     "border-radius": "8px",
                 },
                 "nav-link-selected": {
-                    "background-color": "#ffffff",
+                    "background-color": "#f5f5f5",
                     "color": "black",
-                    "font-weight": "bold",
                 },
             }
         )
@@ -161,7 +171,7 @@ with st.sidebar:
                     "background-color": "transparent",
                 },
                 "icon": {
-                    "color": "#e0e0e0",
+                    "color": "#dddddd",
                 },
                 "nav-link": {
                     "color": "white",
@@ -169,9 +179,8 @@ with st.sidebar:
                     "border-radius": "8px",
                 },
                 "nav-link-selected": {
-                    "background-color": "#ffffff",
+                    "background-color": "#f5f5f5",
                     "color": "black",
-                    "font-weight": "bold",
                 },
             }
         )
