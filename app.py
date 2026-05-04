@@ -65,7 +65,6 @@ with st.sidebar:
     st.markdown(f"""
     <div class="user-box">
         <b>{user['full_name']}</b><br>
-        <small>{user['role']}</small>
     </div>
     """, unsafe_allow_html=True)
 
@@ -128,7 +127,7 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🚪 Logout", use_container_width=True):
+    if st.button("LogOut", use_container_width=True):
         st.session_state.clear()
         st.rerun()
 
